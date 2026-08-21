@@ -828,7 +828,7 @@ let currentTopicBaseId = null;
         function showBottomNav(pageId) {
             const bottomNav = document.getElementById('bottom-nav');
             const menuView = document.getElementById('menu-view');
-            const showNav = pageId === 'page-topics' || pageId === 'page-repetition' || pageId === 'page-path';
+            const showNav = pageId === 'page-topics' || pageId === 'page-repetition' || pageId === 'page-path' || pageId === 'page-account';
             if (!bottomNav) return;
             if (showNav) {
                 bottomNav.classList.remove('nav-hidden');
