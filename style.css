@@ -1422,10 +1422,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px;
-    border-radius: 50%;
+    padding: 6px;
+    border-radius: 1.1rem;
+    border: 3px solid transparent;
     background: transparent;
-    transition: background-color 0.2s, color 0.2s;
+    box-sizing: border-box;
+    transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
 
 .bottom-nav-account-circle svg {
@@ -1436,13 +1438,14 @@
 }
 
 .bottom-nav-btn-account.active .bottom-nav-account-circle {
-    background: #f6ebff;
+    border-color: #b5e0f7;
+    background: #ebfbff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .bottom-nav-btn-account.active .bottom-nav-account-circle svg {
     color: #a84ee6;
 }
-
         /* Окно настройки повторения */
         .repetition-setup-overlay {
             position: fixed;
