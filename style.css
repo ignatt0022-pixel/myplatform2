@@ -935,6 +935,7 @@
 .account-header-v2 {
     background: linear-gradient(180deg, #b35aeb 0%, #cf8df5 50%, #ffffff 100%);
     padding: 40px 24px 64px 24px;
+    margin: -20px -20px 0;
     position: relative;
 }
 
@@ -1747,4 +1748,4 @@
     0% { transform: scale(1); opacity: 0.35; }
     25% { transform: scale(1.35); opacity: 1; }
     50%, 100% { transform: scale(1); opacity: 0.35; }
-}
+           }
