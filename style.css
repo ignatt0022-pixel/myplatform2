@@ -1418,18 +1418,29 @@
 }
 
 /* Стили навигации для аккаунта */
-.bottom-nav-btn-account .bottom-nav-account-circle svg {
+.bottom-nav-account-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border-radius: 50%;
+    background: transparent;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.bottom-nav-account-circle svg {
     width: 32px;
     height: 32px;
     color: #afafaf;
-    transition: all 0.2s;
+    transition: color 0.2s;
 }
 
-.bottom-nav-btn.active .bottom-nav-account-circle svg {
+.bottom-nav-btn-account.active .bottom-nav-account-circle {
     background: #f6ebff;
+}
+
+.bottom-nav-btn-account.active .bottom-nav-account-circle svg {
     color: #a84ee6;
-    padding: 10px;
-    border-radius: 50%;
 }
 
         /* Окно настройки повторения */
@@ -1758,4 +1769,4 @@
 
 #page-account {
     text-align: left;
-                                                                                  }
+                   }
