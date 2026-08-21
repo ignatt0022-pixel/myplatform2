@@ -896,14 +896,21 @@
         }
 
         .bottom-nav-repeat-circle {
-            background: transparent;
-            border: 2.5px solid transparent;
-            border-radius: 999px;
-            padding: 8px;
-            display: flex;
-            box-sizing: border-box;
-            transition: background-color 0.2s, border-color 0.2s;
-        }
+    background: transparent;
+    border: 2.5px solid transparent;
+    border-radius: 999px;
+    padding: 6px;
+    display: flex;
+    box-sizing: border-box;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.bottom-nav-icon-repeat {
+    width: 22px;
+    height: 22px;
+    color: #c57bf3;
+    transition: color 0.2s;
+}
 
         .bottom-nav-icon-repeat {
             width: 26px;
