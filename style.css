@@ -1780,3 +1780,19 @@
 #page-account {
     text-align: left;
                    }
+
+.legal-link {
+    display: block;
+    text-align: left;
+    color: #CC89F4;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 4px 0;
+    transition: color 0.2s;
+}
+
+.legal-link:hover {
+    color: #a84ee6;
+    text-decoration: underline;
+}
