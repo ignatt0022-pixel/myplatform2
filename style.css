@@ -1049,7 +1049,7 @@
 }
 
 .email-actions-panel.open {
-    max-height: 180px;
+    max-height: 210px;
     opacity: 1;
 }
 
