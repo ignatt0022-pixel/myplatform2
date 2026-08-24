@@ -533,13 +533,8 @@ let currentTopicBaseId = null;
                 showBottomNavForAppPage('repetition');
                 currentAppState = 'repetition';
             }
-            // 3. Exit Modal (from Lesson X button)
+            // 3/4. Exit Modal (кнопка "Да" в уроке или аппаратная кнопка "Назад")
             else if (currentAppState === 'exit_modal' && (targetPage === 'path' || targetPage === 'lesson' || targetPage === 'repetition')) {
-                hideExitModalVisuals();
-                currentAppState = targetPage === 'lesson' ? 'lesson' : targetPage;
-            }
-            // 4. Exit Modal (from Hardware Back button in Lesson)
-            else if (currentAppState === 'exit_modal' && (targetPage === 'path' || targetPage === 'repetition')) {
                 if (isProgrammaticBack) {
                     isProgrammaticBack = false;
                     hideExitModalVisuals();
@@ -549,8 +544,7 @@ let currentTopicBaseId = null;
                     currentAppState = targetPage;
                 } else {
                     hideExitModalVisuals();
-                    history.pushState({ page: 'lesson' }, '');
-                    currentAppState = 'lesson';
+                    currentAppState = targetPage === 'lesson' ? 'lesson' : targetPage;
                 }
             }
             // 5. Lesson -> Path or Repetition (Hardware Back)
@@ -685,20 +679,6 @@ let currentTopicBaseId = null;
             const currentVisible = pages.find(id => !document.getElementById(id).classList.contains('hidden')) || 'page-topics';
             
             if (currentVisible === targetPageId) return;
-
-            if (targetPageId === 'page-path') {
-                pages.forEach(id => {
-                    if (id !== targetPageId) document.getElementById(id).classList.add('hidden');
-                });
-                document.getElementById(targetPageId).classList.remove('hidden');
-                return;
-            }
-
-            if (targetPageId === 'page-topics') {
-                pages.forEach(id => document.getElementById(id).classList.add('hidden'));
-                document.getElementById('page-topics').classList.remove('hidden');
-                return;
-            }
             
             const currentId = currentVisible;
             const current = document.getElementById(currentId);
@@ -1548,11 +1528,16 @@ currentLessonFailedTasks = [];
             }
         }
 
-        function showCompletionModal() {
-            lessonCompleted = true;
+function showCompletionModal() {
+    lessonCompleted = true;
 markLessonComplete(currentTopicBaseId, currentLessonId, currentLessonFailedTasks);
-          justCompletedLessonId = currentLessonId;
-            const timeSpent = Math.floor((Date.now() - lessonStartTime) / 1000);
+  justCompletedLessonId = currentLessonId;
+
+    const guestWarning = document.getElementById('comp-guest-warning');
+    const isLoggedIn = window.firebaseAuth && window.firebaseAuth.currentUser;
+    if (guestWarning) guestWarning.style.display = isLoggedIn ? 'none' : 'flex';
+
+    const timeSpent = Math.floor((Date.now() - lessonStartTime) / 1000);
             const minutes = Math.floor(timeSpent / 60);
             const seconds = timeSpent % 60;
             const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -2759,12 +2744,12 @@ try {
   // Слежение за состоянием входа — обновляем текст кнопки
   import("https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js").then(({ onAuthStateChanged }) => {
     onAuthStateChanged(auth, (user) => {
-if (user) {
-    const savedLogin = localStorage.getItem("platformLogin");
-    authAccountBtn.textContent = savedLogin ? savedLogin.split("@")[0] : "Профиль";
+      if (user) {
+    authAccountBtn.classList.add('hidden');
 } else {
     authAccountBtn.textContent = "Войти";
-}
+    authAccountBtn.classList.remove('hidden');
+      }
     });
   });
 
@@ -2943,11 +2928,11 @@ function initAccountLogic() {
         showAccountModal('logout');
     });
 
-    // Кнопка удаления (визуально заблокирована, показываем тост)
-    btnDelete?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        showToast('Удаление аккаунта пока не настроено в базе данных');
-    });
+    // Кнопка удаления аккаунта
+btnDelete?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showAccountModal('delete');
+});
 
     // Изменение состояния авторизации
     onFirebaseReady(() => {
@@ -2965,7 +2950,8 @@ function updateAccountUI(user = null) {
     const currentUser = user || (window.firebaseAuth ? window.firebaseAuth.currentUser : null);
 
     if (currentUser) {
-        if (emailDisplay) emailDisplay.textContent = currentUser.email;
+        const savedLogin = localStorage.getItem("platformLogin");
+        if (emailDisplay) emailDisplay.textContent = savedLogin || 'Аккаунт';
     } else {
         if (emailDisplay) emailDisplay.textContent = 'Гость';
     }
@@ -2993,6 +2979,40 @@ function showAccountModal(action) {
                         navigateToMenuTab('topics');
                     });
                 });
+            }
+        };
+    } else if (action === 'delete') {
+        modalIcon.className = 'modal-icon-container red';
+        modalIcon.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
+        modalTitle.textContent = 'Удалить аккаунт без возможности восстановления?';
+        modalConfirmBtn.className = 'modal-btn-confirm red';
+        modalConfirmBtn.textContent = 'Да, удалить';
+        modalConfirmBtn.onclick = async () => {
+            if (!window.firebaseAuth || !window.firebaseAuth.currentUser) return;
+            modalConfirmBtn.disabled = true;
+            modalConfirmBtn.textContent = 'Удаление...';
+            try {
+                const idToken = await window.firebaseAuth.currentUser.getIdToken();
+                const res = await fetch("https://d5dkes6tf8o0uff54egi.4b4k4pg5.apigw.yandexcloud.net/auth", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "delete", idToken: idToken })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    showToast(data.error || 'Не удалось удалить аккаунт');
+                    modalConfirmBtn.disabled = false;
+                    modalConfirmBtn.textContent = 'Да, удалить';
+                    return;
+                }
+                localStorage.removeItem("platformLogin");
+                modal.classList.add('hidden');
+                showToast('Аккаунт удалён');
+                navigateToMenuTab('topics');
+            } catch (err) {
+                showToast('Ошибка соединения с сервером');
+                modalConfirmBtn.disabled = false;
+                modalConfirmBtn.textContent = 'Да, удалить';
             }
         };
     }
@@ -3129,4 +3149,4 @@ function showToast(text) {
     setTimeout(() => {
         toast.classList.add('hidden');
     }, 2500);
-}
+                                        }
