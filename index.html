@@ -140,7 +140,7 @@
                                     </svg>
                                     <span>Выйти из аккаунта</span>
                                 </button>
-                                <button id="btn-delete" class="action-btn btn-delete" type="button" style="opacity: 0.5; cursor: not-allowed;">
+              <button id="btn-delete" class="action-btn btn-delete" type="button">                  
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF4B4B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M3 6h18"/>
                                         <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
@@ -249,7 +249,7 @@
             </div>
         </header>
 
-        <div id="generator-controls" style="display: none; background: #f9f9f9; padding: 10px 20px; justify-content: center; align-items: center; gap: 15px; border-bottom: 1px solid #eee; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+        <div id="generator-controls" style="display: none; background: #f9f9f9; padding: 6px 18px 6px 8px; justify-content: center; align-items: center; gap: 15px; border-bottom: 1px solid #eee; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
             <label for="chaos-level" style="font-weight: 800; color: #4b4b4b; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Хаотичность:</label>
             <input type="number" id="chaos-level" value="2" min="1" max="10" style="width: 60px; border-radius: 12px; border: 2px solid #e5e5e5; padding: 8px; text-align: center; font-weight: 800; font-size: 16px; color: #4b4b4b; outline: none;">
             <button onclick="regenerateTasks()" style="background: var(--lesson-accent); color: white; border: none; border-radius: 12px; padding: 8px 16px; cursor: pointer; font-weight: 800; font-size: 14px; transition: transform 0.2s;">Обновить</button>
@@ -346,12 +346,12 @@
 
     <!-- Всплывающий тост -->
     <div id="toast" class="toast hidden">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-        </svg>
-        <span id="toast-message"></span>
-    </div>
+    <svg width="40" height="40" viewBox="0 0 100 100" fill="none">
+        <circle cx="50" cy="50" r="39.5" stroke="#1CB0F6" stroke-width="7" stroke-linecap="round"/>
+        <path d="M33 51 L45 63 L69 37" stroke="#1CB0F6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span id="toast-message"></span>
+</div>
 
     <!-- Математическая клавиатура -->
     <div id="math-keyboard">
@@ -443,6 +443,10 @@
                     <div style="background: #1CB0F6; color: white; padding: 8px; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">время</div>
                     <div style="padding: 15px; font-size: 32px; font-weight: 900; color: #1CB0F6;" id="comp-time">0:00</div>
                 </div>
+            </div>
+            <div id="comp-guest-warning" style="background: #f0f9ff; border: 2px solid #bae0fd; border-radius: 16px; padding: 16px; text-align: left; display: flex; flex-direction: column; gap: 10px;">
+                <p style="margin: 0; font-size: 14px; color: #4b4b4b; font-weight: 700; line-height: 1.4;">После закрытия вкладки ваш прогресс будет потерян. Войдите или зарегистрируйте аккаунт, чтобы сохранить его.</p>
+                <button class="auth-btn-primary" onclick="document.getElementById('auth-overlay').classList.remove('hidden')" style="font-size: 14px; padding: 12px 16px;">Войти или зарегистрироваться</button>
             </div>
             <button class="check-btn" onclick="closeCompletionModal()" style="width: 100%; font-size: 18px;">
                 <span class="btn-text">Отлично</span>
