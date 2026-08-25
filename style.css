@@ -23,14 +23,17 @@
             --error-bg: #ffdfe0;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            /* Чтобы при открытом уроке не скроллилось меню на фоне */
-            overflow-x: hidden; 
-        }
+        html {
+    overflow-x: hidden;
+}
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    /* Чтобы при открытом уроке не скроллилось меню на фоне */
+    overflow-x: hidden; 
+}
 
         /* Утилита скрытия */
         .hidden { display: none !important; }
@@ -299,15 +302,16 @@
             transform: scale(1.05);
         }
         .theory-view {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            height: 100vh; /* fallback */
-            height: 100dvh;
-            background-color: rgba(255, 255, 255, 0);
-            z-index: 1010;
-            font-family: 'Nunito', sans-serif;
-            pointer-events: none;
-            transition: background-color 0.3s ease;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 100vh; /* fallback */
+    height: 100dvh;
+    background-color: rgba(255, 255, 255, 0);
+    z-index: 1010;
+    font-family: 'Nunito', sans-serif;
+    pointer-events: none;
+    transition: background-color 0.3s ease;
+    overflow: hidden;
         }
         .theory-view.active {
             background-color: rgba(255, 255, 255, 1);
@@ -1797,4 +1801,24 @@
 .legal-link:hover {
     color: #a84ee6;
     text-decoration: underline;
-                       }
+}
+
+.topics-loading-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+.topics-loading-dots .dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #1CB0F6;
+    opacity: 0.35;
+    transform: scale(1);
+    animation: dotPulse 1.83s ease-in-out infinite;
+}
+.topics-loading-dots .dot:nth-child(1) { animation-delay: -0.61s; }
+.topics-loading-dots .dot:nth-child(2) { animation-delay: 0s; }
+.topics-loading-dots .dot:nth-child(3) { animation-delay: 0.61s; }
