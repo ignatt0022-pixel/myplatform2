@@ -3124,17 +3124,20 @@ function updateProgressStats() {
         let topicCompleted = 0;
 
         t.subtopics.forEach(sub => {
-    sub.levels.forEach(level => {
-        const lessonId = typeof level === 'object' ? level.lessonId : level;
-
-        totalLessons++;
-        topicTotal++;
-        if (t.baseId && userProgress[t.baseId] && userProgress[t.baseId][lessonId] && userProgress[t.baseId][lessonId].completed) {
-            completedLessons++;
-            topicCompleted++;
-        }
-    });
-});
+            sub.levels.forEach(level => {
+                const lessonId = typeof level === 'object' ? level.lessonId : level;
+                const lesson = COURSE_DATA.lessons[lessonId];
+                const isRegularLesson = !(lesson && (lesson.isTest || lesson.isRepetition || lesson.isGenerator));
+                
+                if (isRegularLesson) {
+                    totalLessons++;
+                    topicTotal++;
+                    if (t.baseId && userProgress[t.baseId] && userProgress[t.baseId][lessonId] && userProgress[t.baseId][lessonId].completed) {
+                        completedLessons++;
+                        topicCompleted++;
+                    }
+                }
+            });
         });
 
         if (topicTotal > 0 && topicCompleted === topicTotal) {
@@ -3162,4 +3165,4 @@ function showToast(text) {
     setTimeout(() => {
         toast.classList.add('hidden');
     }, 2500);
-}
+        }
