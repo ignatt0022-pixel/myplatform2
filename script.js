@@ -1123,9 +1123,8 @@ currentTopicBaseId = topic.baseId;
     btn.style.backgroundColor = topic.color;
     btn.style.setProperty('--shadow-color', shadowColor);
 
-    const isRegularLesson = !(lesson && (lesson.isTest || lesson.isRepetition || lesson.isGenerator));
-    const isCompleted = isRegularLesson && topic.baseId && userProgress[topic.baseId] &&
-        userProgress[topic.baseId][lessonId] && userProgress[topic.baseId][lessonId].completed;
+    const isCompleted = topic.baseId && userProgress[topic.baseId] &&
+    userProgress[topic.baseId][lessonId] && userProgress[topic.baseId][lessonId].completed;
 
     if (isCompleted) {
         renderLevelCircleCheckmark(btn, false);
@@ -3055,19 +3054,15 @@ function renderProgressTable() {
         let completedLessons = 0;
 
         t.subtopics.forEach(sub => {
-            sub.levels.forEach(level => {
-                const lessonId = typeof level === 'object' ? level.lessonId : level;
-                const lesson = COURSE_DATA.lessons[lessonId];
-                const isRegularLesson = !(lesson && (lesson.isTest || lesson.isRepetition || lesson.isGenerator));
-                
-                if (isRegularLesson) {
-                    totalLessons++;
-                    if (t.baseId && userProgress[t.baseId] && userProgress[t.baseId][lessonId] && userProgress[t.baseId][lessonId].completed) {
-                        completedLessons++;
-                    }
-                }
-            });
-        });
+    sub.levels.forEach(level => {
+        const lessonId = typeof level === 'object' ? level.lessonId : level;
+
+        totalLessons++;
+        if (t.baseId && userProgress[t.baseId] && userProgress[t.baseId][lessonId] && userProgress[t.baseId][lessonId].completed) {
+            completedLessons++;
+        }
+    });
+});
 
         const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
         const isComplete = progress === 100 && totalLessons > 0;
