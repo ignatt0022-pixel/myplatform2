@@ -3095,21 +3095,17 @@ function renderProgressTable() {
     }).join('');
 
     const totalTasksElem = document.getElementById('total-tasks-count');
-    if (totalTasksElem) {
-        let totalRegularLessons = 0;
-        COURSE_DATA.topics.forEach(t => {
-            t.subtopics.forEach(sub => {
-                sub.levels.forEach(level => {
-                    const lessonId = typeof level === 'object' ? level.lessonId : level;
-                    const lesson = COURSE_DATA.lessons[lessonId];
-                    if (!(lesson && (lesson.isTest || lesson.isRepetition || lesson.isGenerator))) {
-                        totalRegularLessons++;
-                    }
-                });
+if (totalTasksElem) {
+    let totalRegularLessons = 0;
+    COURSE_DATA.topics.forEach(t => {
+        t.subtopics.forEach(sub => {
+            sub.levels.forEach(level => {
+                totalRegularLessons++;
             });
         });
-        totalTasksElem.textContent = `${totalRegularLessons} заданий`;
-    }
+    });
+    totalTasksElem.textContent = `${totalRegularLessons} уроков`;
+}
 }
 
 function updateProgressStats() {
