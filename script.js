@@ -25,7 +25,10 @@ function onFirebaseReady(callback) {
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/10-zadanie",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/13-zadanie.json",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/14%20%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5",
-  "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/20-zadanie"
+
+"https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/15-zadanie.json",
+  
+"https://cdn.jsdelivr.net/gh/ignatt002/blait@main/20-zadanie"
         ];
 
         // ===================================================
@@ -1425,29 +1428,66 @@ currentLessonFailedTasks = [];
             }
 
             for (const key in task) {
-                if (key.startsWith('text')) {
-                    const textVal = task[key];
-                    if (textVal && textVal.trim() !== "") {
-                        const div = document.createElement('div');
-                        div.className = 'task-text-block';
-                        div.innerHTML = autoWrapMath(textVal);
-                        bubble.appendChild(div);
-                    }
-                } else if (key.startsWith('code')) {
-                    const codeVal = task[key];
-                    if (codeVal && codeVal.trim() !== "") {
-                        const div = document.createElement('div');
-                        div.className = 'code-box';
-                        let codeText = codeVal.trim();
-                        codeText = codeText.replace(/^\$+/, '').replace(/\$+$/, '').trim();
-                        if (!codeText.startsWith('\\[')) {
-                            codeText = `\\[ ${codeText} \\]`;
-                        }
-                        div.innerHTML = codeText.replace(/\n/g, '<br>');
-                        bubble.appendChild(div);
-                    }
+    if (key.startsWith('text')) {
+        const textVal = task[key];
+        if (textVal && textVal.trim() !== "") {
+            const div = document.createElement('div');
+            div.className = 'task-text-block';
+            div.innerHTML = autoWrapMath(textVal);
+            bubble.appendChild(div);
+        }
+    } else if (key.startsWith('code')) {
+        const codeVal = task[key];
+        if (codeVal && codeVal.trim() !== "") {
+            const div = document.createElement('div');
+            div.className = 'code-box';
+            let codeText = codeVal.trim();
+            codeText = codeText.replace(/^\$+/, '').replace(/\$+$/, '').trim();
+            if (!codeText.startsWith('\\[')) {
+                codeText = `\\[ ${codeText} \\]`;
+            }
+            div.innerHTML = codeText.replace(/\n/g, '<br>');
+            bubble.appendChild(div);
+        }
+    } else if (key.toLowerCase().startsWith('graph')) {
+    const graphCommands = task[key];
+    if (Array.isArray(graphCommands) && graphCommands.length > 0) {
+        const graphWrapper = document.createElement('div');
+        graphWrapper.className = 'graph-box-wrapper';
+        graphWrapper.style.width = '100%';
+        graphWrapper.style.aspectRatio = '1 / 1';
+        graphWrapper.style.margin = '12px 0';
+        graphWrapper.style.transition = 'aspect-ratio 0.2s ease';
+
+        const iframe = document.createElement('iframe');
+        iframe.src = 'https://ignatt002.github.io/graphics/';
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.border = '2px solid var(--border-color)';
+        iframe.style.borderRadius = '20px';
+        iframe.style.boxSizing = 'border-box';
+        iframe.setAttribute('title', 'graph');
+
+        const commandsStr = graphCommands.join('\n');
+
+        iframe.addEventListener('load', () => {
+            iframe.contentWindow.postMessage({ type: 'render', commands: commandsStr }, '*');
+        });
+
+        window.addEventListener('message', function handleGraphSize(event) {
+            if (event.source === iframe.contentWindow && event.data && event.data.type === 'graph-size') {
+                const ratio = event.data.ratio;
+                if (ratio && isFinite(ratio) && ratio > 0) {
+                    graphWrapper.style.aspectRatio = ratio;
                 }
             }
+        });
+
+        graphWrapper.appendChild(iframe);
+        bubble.appendChild(graphWrapper);
+    }
+}
+}
 
             // Сброс полей
             const lAnswer = document.getElementById('l-answer');
@@ -1535,6 +1575,11 @@ function showCompletionModal() {
 markLessonComplete(currentTopicBaseId, currentLessonId, currentLessonFailedTasks);
   justCompletedLessonId = currentLessonId;
 
+    const questData = getDailyQuestData();
+    questData.lesson = 1;
+    if (currentLesson && currentLesson.isRepetition) questData.repetition = 1;
+    saveDailyQuestData(questData);
+
     const guestWarning = document.getElementById('comp-guest-warning');
     const isLoggedIn = window.firebaseAuth && window.firebaseAuth.currentUser;
     if (guestWarning) guestWarning.style.display = isLoggedIn ? 'none' : 'flex';
@@ -1557,18 +1602,14 @@ markLessonComplete(currentTopicBaseId, currentLessonId, currentLessonFailedTasks
         }
 
         function closeCompletionModal() {
-            const overlay = document.getElementById('completion-modal-overlay');
-            const content = document.getElementById('completion-modal-content');
-            overlay.style.opacity = '0';
-            content.style.transform = 'scale(0.9)';
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-                if (currentAppState === 'lesson') {
-                    history.back();
-                } else {
-                    actuallyCloseLesson();
-                }
-            }, 300);
+    const overlay = document.getElementById('completion-modal-overlay');
+    const content = document.getElementById('completion-modal-content');
+    overlay.style.opacity = '0';
+    content.style.transform = 'scale(0.9)';
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        showDailyQuestsModal();
+    }, 300);
         }
 
         function actuallyCloseLesson() {
@@ -3161,4 +3202,94 @@ function showToast(text) {
     setTimeout(() => {
         toast.classList.add('hidden');
     }, 2500);
+              }
+
+function getTodayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getDailyQuestData() {
+    try {
+        return JSON.parse(localStorage.getItem('dailyQuests_' + getTodayKey())) || { lesson: 0, repetition: 0 };
+    } catch (e) {
+        return { lesson: 0, repetition: 0 };
+    }
+}
+
+function saveDailyQuestData(data) {
+    localStorage.setItem('dailyQuests_' + getTodayKey(), JSON.stringify(data));
+}
+
+function showDailyQuestsModal() {
+    const data = getDailyQuestData();
+    const quests = [
+        {
+            title: 'Пройти 1 урок в день',
+            subtitle: 'Ежедневная цель',
+            progress: data.lesson,
+            target: 1,
+            icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>'
+        },
+        {
+            title: 'Повторить одну тему',
+            subtitle: 'На странице повторения',
+            progress: data.repetition,
+            target: 1,
+            icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>'
         }
+    ];
+
+    const container = document.getElementById('daily-quests-list');
+    container.innerHTML = quests.map(q => {
+        const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
+        const isComplete = q.progress >= q.target;
+return `
+        <div class="table-row">
+            <div class="row-top">
+                <div class="row-left">
+                    <div class="row-icon-box ${isComplete ? 'complete' : 'incomplete'}">${q.icon}</div>
+                    <div class="row-titles">
+                        <div class="title">${q.title}</div>
+                        <div class="subtitle">${q.subtitle}</div>
+                    </div>
+                </div>
+                <div class="row-right">
+                    <span class="progress-text ${isComplete ? 'complete' : 'incomplete'}">${pct}%</span>
+                    ${isComplete ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="#eefce8" stroke="#58CC00" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>' : ''}
+                </div>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill ${isComplete ? 'complete' : 'incomplete'}" style="width: 0%" data-pct="${pct}">
+                    <div class="specular-highlight"></div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    const overlay = document.getElementById('daily-quests-overlay');
+    overlay.classList.remove('hidden');
+    void overlay.offsetWidth;
+    overlay.style.opacity = '1';
+    document.getElementById('daily-quests-content').style.transform = 'scale(1)';
+
+    setTimeout(() => {
+        container.querySelectorAll('.progress-bar-fill').forEach(bar => {
+            bar.style.width = bar.getAttribute('data-pct') + '%';
+        });
+    }, 150);
+}
+function closeDailyQuestsModal() {
+    const overlay = document.getElementById('daily-quests-overlay');
+    const content = document.getElementById('daily-quests-content');
+    overlay.style.opacity = '0';
+    content.style.transform = 'scale(0.9)';
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        if (currentAppState === 'lesson') {
+            history.back();
+        } else {
+            actuallyCloseLesson();
+        }
+    }, 300);
+      }
