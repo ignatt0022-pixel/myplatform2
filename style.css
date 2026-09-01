@@ -1284,7 +1284,7 @@ body {
     height: 100%;
     border-radius: 9999px;
     position: relative;
-    transition: width 0.5s ease;
+    transition: width 2.5s ease;
 }
 
 .progress-bar-fill.complete {
