@@ -14,6 +14,14 @@ function onFirebaseReady(callback) {
             lessons: {}
         };
 
+// Проверка: является ли элемент levels заголовком-оглавлением, а не уроком
+        function isSectionHeader(level) {
+            return typeof level === 'string' && level.trim().startsWith('###');
+        }
+        function getSectionHeaderText(level) {
+            return level.trim().slice(3).trim();
+        }
+
         // ===================================================
         // СЮДА ВСТАВЛЯТЬ ССЫЛКИ НА RAW ФАЙЛЫ С ГИТХАБА (в формате JSON)
         // Пример: "https://raw.githubusercontent.com/username/repo/main/topic1.json"
@@ -323,11 +331,11 @@ let currentTopicBaseId = null;
                         const level = regularLevels[i];
                         finalLevels.push(level);
                         
-                        const levelId = typeof level === 'object' ? level.lessonId : level;
+              const levelId = typeof level === 'object' ? level.lessonId : level;
                         const lesson = COURSE_DATA.lessons[levelId];
-                        if (!lesson || !lesson.isTest) {
+                        if (!isSectionHeader(level) && (!lesson || !lesson.isTest)) {
                             regCount++;
-                        }
+                        }          
                         
                         let toInsert = pendingPlaced.filter(l => {
                             const lId = typeof l === 'object' ? l.lessonId : l;
@@ -1094,6 +1102,15 @@ currentTopicBaseId = topic.baseId;
 
             let displayCounter = 1;
           subtopic.levels.forEach((level, index) => {
+if (isSectionHeader(level)) {
+        const divider = document.createElement('div');
+        divider.className = 'path-section-divider';
+        const span = document.createElement('span');
+        span.innerText = getSectionHeaderText(level);
+        divider.appendChild(span);
+        pathContainer.appendChild(divider);
+        return;
+    }
     const lessonId = typeof level === 'object' ? level.lessonId : level;
     const lesson = COURSE_DATA.lessons[lessonId];
     
