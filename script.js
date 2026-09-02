@@ -3244,6 +3244,7 @@ function showDailyQuestsModal() {
     container.innerHTML = quests.map(q => {
         const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
         const isComplete = q.progress >= q.target;
+        const startPct = getSavedQuestBarPct(q.title);
 return `
         <div class="table-row">
             <div class="row-top">
@@ -3260,7 +3261,7 @@ return `
                 </div>
             </div>
             <div class="progress-bar-bg">
-                <div class="progress-bar-fill ${isComplete ? 'complete' : 'incomplete'}" style="width: 0%" data-pct="${pct}">
+                <div class="progress-bar-fill ${isComplete ? 'complete' : 'incomplete'}" style="width: ${startPct}%" data-pct="${pct}" data-title="${q.title}">
                     <div class="specular-highlight"></div>
                 </div>
             </div>
@@ -3275,9 +3276,29 @@ return `
 
     setTimeout(() => {
         container.querySelectorAll('.progress-bar-fill').forEach(bar => {
-            bar.style.width = bar.getAttribute('data-pct') + '%';
+            const finalPct = bar.getAttribute('data-pct');
+            bar.style.width = finalPct + '%';
+            saveQuestBarPct(bar.getAttribute('data-title'), finalPct);
         });
     }, 150);
+}
+
+function getSavedQuestBarPct(title) {
+    try {
+        const saved = JSON.parse(localStorage.getItem('dailyQuestsBarPct_' + getTodayKey())) || {};
+        return saved[title] || 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function saveQuestBarPct(title, pct) {
+    let saved = {};
+    try {
+        saved = JSON.parse(localStorage.getItem('dailyQuestsBarPct_' + getTodayKey())) || {};
+    } catch (e) {}
+    saved[title] = pct;
+    localStorage.setItem('dailyQuestsBarPct_' + getTodayKey(), JSON.stringify(saved));
 }
 function closeDailyQuestsModal() {
     const overlay = document.getElementById('daily-quests-overlay');
@@ -3292,4 +3313,4 @@ function closeDailyQuestsModal() {
             actuallyCloseLesson();
         }
     }, 300);
-      }
+        }
