@@ -247,6 +247,14 @@ body {
             margin: 20px 0 10px 0;
             gap: 14px;
         }
+
+.path-section-divider:first-child {
+            margin-top: 0;
+        }
+        .path-container.starts-with-divider {
+            padding-top: 10px;
+        }
+
         .path-section-divider::before,
         .path-section-divider::after {
             content: '';
