@@ -1099,6 +1099,7 @@ currentTopicBaseId = topic.baseId;
 
             const pathContainer = document.getElementById('path-container');
             pathContainer.innerHTML = '';
+            pathContainer.classList.toggle('starts-with-divider', subtopic.levels.length > 0 && isSectionHeader(subtopic.levels[0]));
 
             let displayCounter = 1;
           subtopic.levels.forEach((level, index) => {
@@ -3330,4 +3331,4 @@ function closeDailyQuestsModal() {
             actuallyCloseLesson();
         }
     }, 300);
-        }
+          }
