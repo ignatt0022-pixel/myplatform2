@@ -1470,42 +1470,9 @@ currentLessonFailedTasks = [];
     } else if (key.toLowerCase().startsWith('graph')) {
     const graphCommands = task[key];
     if (Array.isArray(graphCommands) && graphCommands.length > 0) {
-        const graphWrapper = document.createElement('div');
-        graphWrapper.className = 'graph-box-wrapper';
-        graphWrapper.style.width = '100%';
-        graphWrapper.style.aspectRatio = '1 / 1';
-        graphWrapper.style.margin = '12px 0';
-        graphWrapper.style.transition = 'aspect-ratio 0.2s ease';
-
-        const iframe = document.createElement('iframe');
-        iframe.src = 'https://ignatt002.github.io/graphics/';
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        iframe.style.border = '2px solid var(--border-color)';
-        iframe.style.borderRadius = '20px';
-        iframe.style.boxSizing = 'border-box';
-        iframe.setAttribute('title', 'graph');
-
-        const commandsStr = graphCommands.join('\n');
-
-        iframe.addEventListener('load', () => {
-            iframe.contentWindow.postMessage({ type: 'render', commands: commandsStr }, '*');
-        });
-
-        window.addEventListener('message', function handleGraphSize(event) {
-            if (event.source === iframe.contentWindow && event.data && event.data.type === 'graph-size') {
-                const ratio = event.data.ratio;
-                if (ratio && isFinite(ratio) && ratio > 0) {
-                    graphWrapper.style.aspectRatio = ratio;
-                }
-            }
-        });
-
-        graphWrapper.appendChild(iframe);
-        bubble.appendChild(graphWrapper);
+        bubble.appendChild(createGraphBox(graphCommands));
     }
-}
-}
+}}
 
             // Сброс полей
             const lAnswer = document.getElementById('l-answer');
@@ -1704,6 +1671,11 @@ markLessonComplete(currentTopicBaseId, currentLessonId, currentLessonFailedTasks
                         div.innerHTML = codeText.replace(/\n/g, '<br>');
                         bubble.appendChild(div);
                     }
+                } else if (key.toLowerCase().startsWith('graph')) {
+                    const graphCommands = theory[key];
+                    if (Array.isArray(graphCommands) && graphCommands.length > 0) {
+                        bubble.appendChild(createGraphBox(graphCommands));
+                    }
                 }
             }
             
@@ -1755,6 +1727,11 @@ markLessonComplete(currentTopicBaseId, currentLessonId, currentLessonFailedTasks
                         }
                         div.innerHTML = codeText.replace(/\n/g, '<br>');
                         bubble.appendChild(div);
+                    }
+                } else if (key.toLowerCase().startsWith('graph')) {
+                    const graphCommands = theory[key];
+                    if (Array.isArray(graphCommands) && graphCommands.length > 0) {
+                        bubble.appendChild(createGraphBox(graphCommands));
                     }
                 }
             }
@@ -3332,3 +3309,39 @@ function closeDailyQuestsModal() {
         }
     }, 300);
           }
+
+function createGraphBox(graphCommands) {
+    const graphWrapper = document.createElement('div');
+    graphWrapper.className = 'graph-box-wrapper';
+    graphWrapper.style.width = '100%';
+    graphWrapper.style.aspectRatio = '1 / 1';
+    graphWrapper.style.margin = '12px 0';
+    graphWrapper.style.transition = 'aspect-ratio 0.2s ease';
+
+    const iframe = document.createElement('iframe');
+    iframe.src = 'https://ignatt002.github.io/graphics/';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = '2px solid var(--border-color)';
+    iframe.style.borderRadius = '20px';
+    iframe.style.boxSizing = 'border-box';
+    iframe.setAttribute('title', 'graph');
+
+    const commandsStr = graphCommands.join('\n');
+
+    iframe.addEventListener('load', () => {
+        iframe.contentWindow.postMessage({ type: 'render', commands: commandsStr }, '*');
+    });
+
+    window.addEventListener('message', function handleGraphSize(event) {
+        if (event.source === iframe.contentWindow && event.data && event.data.type === 'graph-size') {
+            const ratio = event.data.ratio;
+            if (ratio && isFinite(ratio) && ratio > 0) {
+                graphWrapper.style.aspectRatio = ratio;
+            }
+        }
+    });
+
+    graphWrapper.appendChild(iframe);
+    return graphWrapper;
+                          }
