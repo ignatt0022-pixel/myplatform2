@@ -1827,10 +1827,33 @@ if (!currentLesson || !showTheoryBtn || !theory) return;
         }
 
         function goToReportForm() {
-            window.open('https://docs.google.com/forms/d/e/1FAIpQLSe9asK8LpTdcIIzj6oqX0HRHvxe-o2qU6Gfu1mG4CuaZLzj6A/viewform', '_blank');
+            window.open('https://forms.gle/r1MJEc5GiBF64bHD6', '_blank');
             closeReportModal();
         }
+function copyLessonCode() {
+            const code = document.getElementById('report-lesson-code').innerText;
+            if (!code) return;
 
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code)
+                    .then(() => showToast('Код скопирован!'))
+                    .catch(() => showToast('Не удалось скопировать'));
+            } else {
+                const temp = document.createElement('textarea');
+                temp.value = code;
+                temp.style.position = 'fixed';
+                temp.style.opacity = '0';
+                document.body.appendChild(temp);
+                temp.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('Код скопирован!');
+                } catch (e) {
+                    showToast('Не удалось скопировать');
+                }
+                document.body.removeChild(temp);
+            }
+        }
         function resetErrorState() {
             const lAnswer = document.getElementById('l-answer');
             lAnswer.style.borderColor = '';
