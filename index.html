@@ -54,7 +54,15 @@
     </svg>
   </button>
 </div>
-
+<div id="auth-consent-group" class="hidden" style="margin-bottom: 14px; text-align: left;">
+      <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 13px; color: #6b7280; line-height: 1.4;">
+        <span class="repetition-setup-checkbox-wrap" style="margin-top: 1px;">
+          <input type="checkbox" id="auth-consent-checkbox" class="repetition-setup-checkbox">
+          <span class="repetition-setup-checkmark"></span>
+        </span>
+        <span>Я принимаю <a href="terms.html" target="_blank" style="color: #1CB0F6;">пользовательское соглашение</a> и <a href="privacy.html" target="_blank" style="color: #1CB0F6;">политику конфиденциальности</a></span>
+      </label>
+    </div>
     <div id="auth-error" style="color: #ff4b4b; font-size: 14px; margin-bottom: 10px; display: none;"></div>
 
     <button id="auth-submit-btn" class="auth-btn-primary" style="margin-bottom: 10px;">
@@ -70,8 +78,17 @@
   </div>
 </div>
 
-<!-- Кнопка входа (плавающая, поверх интерфейса) -->
-<button id="auth-account-btn" style="position: fixed; top: 12px; right: 12px; z-index: 100; background: white; border: 2px solid #e5e5e5; border-radius: 20px; padding: 8px 16px; font-weight: 700; cursor: pointer;">Войти</button>
+<!-- Кнопка входа + флажок (плавающая, поверх интерфейса) -->
+<div id="account-btn-group" style="position: fixed; top: 12px; right: 12px; z-index: 100; display: flex; align-items: stretch; background: white; border: 2px solid #e5e5e5; border-radius: 20px; overflow: hidden;">
+    <button id="global-report-btn" type="button" onclick="goToReportForm()" style="background: none; border: none; padding: 8px 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #afafaf;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 22V3"/>
+            <path d="M4 3h14l-3 5 3 5H4"/>
+        </svg>
+    </button>
+    <div id="account-btn-divider" style="width: 2px; background: #e5e5e5;"></div>
+    <button id="auth-account-btn" style="background: white; border: none; padding: 8px 16px; font-weight: 700; cursor: pointer;">Войти</button>
+</div>
     
     <!-- Попап настройки повторения -->
     <div id="repetition-setup-overlay" class="repetition-setup-overlay overlay-hidden" onclick="closeRepetitionSetup()">
@@ -249,7 +266,12 @@
         <header class="lesson-header">
             <div class="close-lesson-btn" onclick="confirmCloseLesson()">✕</div>
             <div class="lesson-path-text" id="l-path">Загрузка...</div> 
-            <button class="lesson-menu-btn" onclick="toggleLessonMenu()">⋮</button>
+            <button class="lesson-menu-btn" onclick="toggleLessonMenu()">
+    <svg width="22" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 22V3"/>
+        <path d="M4 3h14l-3 5 3 5H4"/>
+    </svg>
+</button>
             <div class="lesson-dropdown hidden" id="lesson-dropdown">
                 <div class="lesson-dropdown-title" id="ld-title">Название урока</div>
                 <div class="lesson-dropdown-info" id="ld-progress">Задание 1 из 5</div>
@@ -304,9 +326,16 @@
                     <button class="check-btn btn-explain hidden" id="btn-explain" onclick="showExplanation()">
                         <span class="btn-text">Объяснение</span>
                     </button>
-                    <button class="btn-understand hidden" id="btn-close-explain" onclick="closeExplanation()">
-                        <span class="btn-text">Понятно</span>
-                    </button>
+              <button class="btn-understand hidden" id="btn-close-explain" onclick="closeExplanation()">
+    <span class="explain-report-flag" onclick="event.stopPropagation(); showReportModal();">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 22V3"/>
+            <path d="M4 3h14l-3 5 3 5H4"/>
+        </svg>
+    </span>
+    <span class="explain-report-divider"></span>
+    <span class="btn-text">Понятно</span>
+</button>      
                 </div>
             </div>
         </footer>
