@@ -494,6 +494,26 @@ body {
             display: flex;
         }
 
+        .explain-report-flag {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            align-self: stretch;
+            cursor: pointer;
+        }
+        .explain-report-flag:hover {
+            background: rgba(0,0,0,0.05);
+        }
+        .explain-report-divider {
+            display: flex;
+            width: 2px;
+            background: var(--border-color);
+            opacity: 1;
+            align-self: stretch;
+            margin: 10px 0;
+        }
+
         .btn-secondary { background-color: #ffffff; color: var(--error-color); box-shadow: 0 5px 0 #e5e5e5; border: 2px solid #e5e5e5; }
         .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #e5e5e5; }
         .btn-explain { background-color: #1CB0F6; box-shadow: 0 5px 0 #1899D6; }
@@ -1622,6 +1642,13 @@ body {
             border-color: #be6cf1;
         }
 
+#auth-consent-group .repetition-setup-checkbox:checked + .repetition-setup-checkmark {
+            background: var(--lesson-accent);
+            border-color: var(--lesson-accent);
+        }
+        #auth-consent-group .repetition-setup-checkbox-wrap:hover .repetition-setup-checkmark {
+            border-color: var(--lesson-accent);
+        }
         .repetition-setup-checkbox:checked + .repetition-setup-checkmark::after {
             content: '✓';
         }
