@@ -92,6 +92,11 @@ body {
         
         .back-btn { background: none; border: none; color: #afafaf; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; transition: color 0.2s, transform 0.2s; }
         .back-btn:hover { color: #777; transform: translateX(-5px); }
+        body:has(#auth-account-btn:not(.hidden)) .back-btn {
+            display: block;
+            margin-right: auto;
+            margin-left: 0;
+        }
         h1 { color: #4b4b4b; margin-bottom: 30px; }
 
         .grid-container { display: grid; gap: 15px; }
@@ -717,6 +722,36 @@ body {
         .report-btn-go { background: #58cc02; color: white; box-shadow: 0 4px 0 #46a302; }
         .report-btn-go:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #46a302; }
         .report-btn-go:active { transform: translateY(4px) !important; box-shadow: 0 0 0 transparent !important; }
+
+.report-copy-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #f7f7f7;
+            color: #4b4b4b;
+            border: 2px solid var(--border-color);
+            border-radius: 14px;
+            padding: 12px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 0 var(--border-color);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s, background-color 0.2s;
+        }
+        .report-copy-btn:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 var(--border-color);
+        }
+        .report-copy-btn:active {
+            transform: translateY(4px) !important;
+            box-shadow: 0 0 0 transparent !important;
+        }
         
         .explanation-correct-answer {
             color: #58cc02; font-weight: 800;
