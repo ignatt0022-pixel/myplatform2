@@ -586,6 +586,12 @@ let currentTopicBaseId = null;
                 document.getElementById('lesson-dropdown').classList.remove('hidden');
                 currentAppState = 'lesson_dropdown';
             }
+
+// 8b. Report Modal (открыт напрямую из объяснения, без dropdown)
+            else if (currentAppState === 'report_modal' && targetPage === 'lesson') {
+                document.getElementById('report-modal-overlay').classList.add('hidden');
+                currentAppState = 'lesson';
+            }
             // 9. Path -> Topics
             else if (currentAppState === 'path' && targetPage === 'topics') {
                 navigateMenu('page-topics', true);
@@ -753,7 +759,8 @@ setTimeout(() => {
             '10 задание': { subtitle: 'Вероятности', icon: 'dices' },
             '11 задание': { subtitle: 'Графики функций', icon: 'line-chart' },
             '13 задание': { subtitle: 'Решение неравенств', icon: 'greater-equal' },
-            '14 задание': { subtitle: 'Прогрессии', icon: 'trending-up' }
+            '14 задание': { subtitle: 'Прогрессии', icon: 'trending-up' },
+'15 задание': { subtitle: 'Треугольники', icon: 'triangle' }
         };
 
         function getRepetitionTopicMeta(topic) {
@@ -774,7 +781,8 @@ setTimeout(() => {
                 dices: '<svg class="repetition-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>',
                 'line-chart': '<svg class="repetition-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/></svg>',
                 'greater-equal': '<svg class="repetition-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l14 5-14 5"/><path d="M5 20l14-5"/></svg>',
-                'trending-up': '<svg class="repetition-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-10"/><path d="M14 5h7v7"/></svg>'
+                'trending-up': '<svg class="repetition-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-10"/><path d="M14 5h7v7"/></svg>',
+                triangle: '<svg class="repetition-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4 L4 20 L20 20 Z"/><path d="M4 15 L8 15 L8 20"/></svg>'
             };
             return icons[iconName] || icons.calculator;
         }
@@ -1642,9 +1650,12 @@ markLessonComplete(currentTopicBaseId, currentLessonId, currentLessonFailedTasks
             
             const theory = (currentLesson && currentLesson.theory) || subtopicTheory || (currentTopic && currentTopic.theory);
             
-            if (!currentLesson || !showTheoryBtn || !theory) return;
-            
-            document.getElementById('t-title').innerText = currentLesson.title;
+if (!currentLesson || !showTheoryBtn || !theory) return;
+    
+    const theoryTitle = (currentTopic && currentSubtopicIndex !== null && currentTopic.subtopics[currentSubtopicIndex])
+        ? currentTopic.subtopics[currentSubtopicIndex].title
+        : (currentTopic ? currentTopic.title : currentLesson.title);
+    document.getElementById('t-title').innerText = theoryTitle;
             
             const bubble = document.getElementById('t-example-bubble');
             bubble.innerHTML = '';
@@ -1786,7 +1797,7 @@ markLessonComplete(currentTopicBaseId, currentLessonId, currentLessonFailedTasks
         document.addEventListener('click', (e) => {
             const dropdown = document.getElementById('lesson-dropdown');
             const menuBtn = document.querySelector('.lesson-menu-btn');
-            if (dropdown && !dropdown.classList.contains('hidden') && !dropdown.contains(e.target) && e.target !== menuBtn) {
+            if (dropdown && !dropdown.classList.contains('hidden') && !dropdown.contains(e.target) && !menuBtn.contains(e.target)) {
                 dropdown.classList.add('hidden');
                 if (currentAppState === 'lesson_dropdown') {
                     history.back();
@@ -2161,6 +2172,9 @@ markLessonComplete(currentTopicBaseId, currentLessonId, currentLessonFailedTasks
                 void btnCloseExplain.offsetWidth; // trigger reflow
                 btnCloseExplain.classList.add('btn-animated');
                 btnCloseExplain.style.animationDelay = `${delayCount * 0.1}s`;
+btnCloseExplain.addEventListener('animationend', () => {
+                    btnCloseExplain.classList.remove('btn-animated');
+                }, { once: true });
                 
                 // Запускаем анимацию высоты до 100vh и плавно показываем новый контент
                 footer.style.height = '100vh';
@@ -2713,6 +2727,8 @@ togglePasswordBtn.addEventListener("click", () => {
     authSubmitBtn.querySelector(".auth-btn-text").textContent = isRegisterMode ? "Зарегистрироваться" : "Войти";
     authToggle.textContent = isRegisterMode ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Зарегистрироваться";
     authError.style.display = "none";
+    document.getElementById('auth-consent-group').classList.toggle('hidden', !isRegisterMode);
+    document.getElementById('auth-consent-checkbox').checked = false;
   });
 
   // Отправка формы
@@ -2725,6 +2741,14 @@ authSubmitBtn.disabled = true;
 
     if (!email || !password) {
     authError.textContent = "Заполните все поля";
+    authError.style.display = "block";
+    authSubmitBtn.classList.remove("loading");
+    authSubmitBtn.disabled = false;
+    return;
+    }
+
+if (isRegisterMode && !document.getElementById('auth-consent-checkbox').checked) {
+    authError.textContent = "Нужно принять пользовательское соглашение и политику конфиденциальности";
     authError.style.display = "block";
     authSubmitBtn.classList.remove("loading");
     authSubmitBtn.disabled = false;
@@ -2784,9 +2808,11 @@ try {
     onAuthStateChanged(auth, (user) => {
       if (user) {
     authAccountBtn.classList.add('hidden');
+    document.getElementById('account-btn-divider')?.classList.add('hidden');
 } else {
     authAccountBtn.textContent = "Войти";
     authAccountBtn.classList.remove('hidden');
+    document.getElementById('account-btn-divider')?.classList.remove('hidden');
       }
     });
   });
