@@ -11,6 +11,7 @@ let draftThickness = 3;
 let draftColor = '#4b4b4b';
 let draftDpr = window.devicePixelRatio || 1;
 let draftIsFullscreen = false;
+let draftFullscreenPlaceholder = null;
 
 // Все линии хранятся в "мировых" координатах — не зависят от масштаба/сдвига камеры
 let draftStrokes = [];
@@ -204,6 +205,17 @@ function toggleDraftFullscreen() {
     draftIsFullscreen = !draftIsFullscreen;
     const wrap = document.getElementById('l-draft-input-group');
     const btn = document.getElementById('draft-fullscreen-btn');
+
+    if (draftIsFullscreen) {
+        draftFullscreenPlaceholder = document.createComment('draft-fullscreen-placeholder');
+        wrap.parentNode.insertBefore(draftFullscreenPlaceholder, wrap);
+        document.body.appendChild(wrap);
+    } else if (draftFullscreenPlaceholder) {
+        draftFullscreenPlaceholder.parentNode.insertBefore(wrap, draftFullscreenPlaceholder);
+        draftFullscreenPlaceholder.remove();
+        draftFullscreenPlaceholder = null;
+    }
+
     wrap.classList.toggle('draft-fullscreen', draftIsFullscreen);
     btn.classList.toggle('active', draftIsFullscreen);
     document.body.classList.toggle('draft-fullscreen-open', draftIsFullscreen);
