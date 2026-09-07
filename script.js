@@ -1437,9 +1437,10 @@ currentLessonFailedTasks = [];
             document.getElementById('l-main').scrollTop = 0;
             const task = currentLesson.tasks[currentTaskIndex];
 
-            // Заголовок и путь
-            const taskCountText = currentLesson.isGenerator ? ` (Задание ${currentTaskIndex + 1})` : (currentLesson.tasks.length > 1 ? ` (Задание ${currentTaskIndex + 1} из ${currentLesson.tasks.length})` : '');
-            document.getElementById('l-path').innerText = currentLesson.path + taskCountText;
+            // Прогресс-бар вместо текста пути
+            const totalTasks = currentLesson.tasks.length;
+            const progressPercent = totalTasks > 0 ? Math.min(100, (currentTaskIndex / totalTasks) * 100) : 0;
+            document.getElementById('l-progress-fill').style.width = progressPercent + '%';
             document.getElementById('l-title').innerText = currentLesson.title;
 
             // Динамическая генерация текста и кода
@@ -1483,6 +1484,7 @@ currentLessonFailedTasks = [];
 }}
 
             // Сброс полей
+            if (typeof resetDraftCanvasForNewTask === 'function') resetDraftCanvasForNewTask();
             const lAnswer = document.getElementById('l-answer');
             const lDraft = document.getElementById('l-draft');
             const lAnswerContainer = document.getElementById('l-answer-container');
@@ -2007,6 +2009,11 @@ function copyLessonCode() {
                         lAnswer.style.backgroundColor = "var(--success-bg)";
                         lAnswer.style.color = "var(--success-shadow)";
                         lAnswer.disabled = true;
+
+                        if (!currentLesson.isGenerator && currentTaskIndex === currentLesson.tasks.length - 1) {
+                            const progressFill = document.getElementById('l-progress-fill');
+                            if (progressFill) progressFill.style.width = '100%';
+                        }
                     } else {
                         // Ошибка
                         footer.className = 'lesson-footer state-error';
@@ -2101,6 +2108,8 @@ function copyLessonCode() {
                 }
             } else {
                 currentTaskIndex++;
+                const progressFill = document.getElementById('l-progress-fill');
+                if (progressFill) progressFill.style.width = '100%';
                 showCompletionModal();
             }
         }
@@ -3393,4 +3402,4 @@ function createGraphBox(graphCommands) {
 
     graphWrapper.appendChild(iframe);
     return graphWrapper;
-                          }
+      }
