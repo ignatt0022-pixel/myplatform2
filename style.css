@@ -1999,6 +1999,18 @@ body.draft-fullscreen-open {
     overflow: hidden;
     z-index: 5;
 }
+.draft-mode-corner {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    background: #f7f7f7;
+    border-left: 2px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+    border-bottom-left-radius: 14px;
+    overflow: hidden;
+    z-index: 5;
+}
 .draft-fullscreen-btn {
     width: 68px;
     height: 34px;
@@ -2011,7 +2023,12 @@ body.draft-fullscreen-open {
     color: #4b4b4b;
     transition: background-color 0.2s, color 0.2s;
 }
-.draft-fullscreen-btn:hover {
+@media (hover: hover) {
+    .draft-fullscreen-btn:hover {
+        background: rgba(0,0,0,0.06);
+    }
+}
+.draft-fullscreen-btn:active {
     background: rgba(0,0,0,0.06);
 }
 .draft-fullscreen-btn.active {
@@ -2029,7 +2046,12 @@ body.draft-fullscreen-open {
     color: #4b4b4b;
     transition: background-color 0.2s, color 0.2s, opacity 0.2s;
 }
-.draft-undo-redo-btn:hover:not(:disabled) {
+@media (hover: hover) {
+    .draft-undo-redo-btn:hover:not(:disabled) {
+        background: rgba(0,0,0,0.06);
+    }
+}
+.draft-undo-redo-btn:active:not(:disabled) {
     background: rgba(0,0,0,0.06);
 }
 .draft-undo-redo-btn:disabled {
@@ -2046,10 +2068,6 @@ body.draft-fullscreen-open {
 .draft-input-wrap .lesson-input {
     border: none;
     border-radius: 0;
-    min-height: 165px;
-    display: flex;
-    align-items: flex-start;
-    padding-top: 15px;
 }
 .draft-input-wrap .draft-canvas {
     border: none;
@@ -2085,7 +2103,12 @@ body.draft-fullscreen-open {
     cursor: pointer;
     transition: background-color 0.2s, border-color 0.2s, transform 0.15s;
 }
-.draft-tool-btn:hover {
+@media (hover: hover) {
+    .draft-tool-btn:hover {
+        background: rgba(0,0,0,0.06);
+    }
+}
+.draft-tool-btn:active {
     background: rgba(0,0,0,0.06);
 }
 .draft-tool-btn:active {
@@ -2097,9 +2120,10 @@ body.draft-fullscreen-open {
     color: var(--lesson-accent);
 }
 #draft-mode-toggle.active {
-    background: var(--lesson-accent);
-    border-color: var(--lesson-accent);
-    color: white;
+    background: #f0f0f0;
+    border-color: #f0f0f0;
+    color: #4b4b4b;
+    border-radius: 0 14px 0 0;
 }
 .draft-thickness-slider {
     width: 110px;
@@ -2197,4 +2221,21 @@ body.draft-fullscreen-open {
 }
 .draft-color-option.active {
     border-color: #4b4b4b;
-                         }
+}
+
+.draft-task-pin {
+    position: absolute;
+    top: 0;
+    left: 0;
+    max-width: calc(100% - 32px);
+    transform-origin: 0 0;
+    z-index: 3;
+    margin: 0 !important;
+    pointer-events: none;
+}
+
+.draft-input-wrap.draft-fullscreen .draft-canvas {
+    position: relative;
+    z-index: 4;
+    background: transparent;
+}
