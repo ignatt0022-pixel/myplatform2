@@ -12,6 +12,8 @@ let draftColor = '#4b4b4b';
 let draftDpr = window.devicePixelRatio || 1;
 let draftIsFullscreen = false;
 let draftFullscreenPlaceholder = null;
+let draftTaskPlaceholder = null;
+let draftStrokesShiftedForFullscreen = false;
 
 // Все линии хранятся в "мировых" координатах — не зависят от масштаба/сдвига камеры
 let draftStrokes = [];
@@ -72,6 +74,15 @@ function getDraftScreenPos(e, canvas) {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
+function updateDraftTaskPin() {
+    const pin = document.getElementById('l-character-row');
+    if (!pin || !pin.classList.contains('draft-task-pin')) return;
+    const anchor = 16; // та самая "мировая" точка (16,16), где блок стоял изначально при zoom=1
+    const x = draftPanX + anchor * draftZoom;
+    const y = draftPanY + anchor * draftZoom;
+    pin.style.transform = `translate(${x}px, ${y}px) scale(${draftZoom})`;
+}
+
 function redrawDraftCanvas() {
     const canvas = document.getElementById('l-draft-canvas');
     if (!canvas) return;
@@ -100,6 +111,8 @@ function redrawDraftCanvas() {
         }
         ctx.stroke();
     });
+
+    updateDraftTaskPin();
 }
 
 function draftPointerDown(e) {
@@ -173,22 +186,30 @@ function toggleDraftDrawMode() {
     const toolIds = ['draft-tool-pen', 'draft-tool-eraser', 'draft-color-wrap', 'draft-clear-btn'];
     const slider = document.getElementById('draft-thickness');
     const topControls = document.getElementById('draft-top-controls');
+    const toolbar = document.getElementById('draft-toolbar');
+    const modeCorner = document.getElementById('draft-mode-corner');
 
     if (draftDrawMode) {
         mathField.classList.add('hidden');
         canvas.classList.remove('hidden');
         if (topControls) topControls.classList.remove('hidden');
+        toolbar.classList.remove('hidden');
+        modeCorner.classList.add('hidden');
         toggleBtn.classList.add('active');
         toolIds.forEach(id => document.getElementById(id).classList.remove('hidden'));
         slider.classList.remove('hidden');
+        if (topControls) topControls.appendChild(toggleBtn);
         resizeDraftCanvas();
     } else {
         mathField.classList.remove('hidden');
         canvas.classList.add('hidden');
         if (topControls) topControls.classList.add('hidden');
+        toolbar.classList.add('hidden');
+        modeCorner.classList.remove('hidden');
         toggleBtn.classList.remove('active');
         toolIds.forEach(id => document.getElementById(id).classList.add('hidden'));
         slider.classList.add('hidden');
+        modeCorner.appendChild(toggleBtn);
     }
 }
 
@@ -205,21 +226,69 @@ function toggleDraftFullscreen() {
     draftIsFullscreen = !draftIsFullscreen;
     const wrap = document.getElementById('l-draft-input-group');
     const btn = document.getElementById('draft-fullscreen-btn');
+    const modeToggle = document.getElementById('draft-mode-toggle');
+    const taskBlock = document.getElementById('l-character-row');
 
     if (draftIsFullscreen) {
+        draftZoom = 0.8;
+        draftPanX = 0;
+        draftPanY = 0;
+
         draftFullscreenPlaceholder = document.createComment('draft-fullscreen-placeholder');
         wrap.parentNode.insertBefore(draftFullscreenPlaceholder, wrap);
         document.body.appendChild(wrap);
-    } else if (draftFullscreenPlaceholder) {
-        draftFullscreenPlaceholder.parentNode.insertBefore(wrap, draftFullscreenPlaceholder);
-        draftFullscreenPlaceholder.remove();
-        draftFullscreenPlaceholder = null;
+
+        if (taskBlock) {
+            draftTaskPlaceholder = document.createComment('draft-task-placeholder');
+            taskBlock.parentNode.insertBefore(draftTaskPlaceholder, taskBlock);
+            taskBlock.classList.remove('bounce-in', 'delay-1');
+            taskBlock.classList.add('draft-task-pin');
+            wrap.appendChild(taskBlock);
+            updateDraftTaskPin();
+        }
+    } else {
+        if (taskBlock && draftTaskPlaceholder) {
+            taskBlock.classList.remove('draft-task-pin');
+            taskBlock.classList.add('bounce-in', 'delay-1');
+            taskBlock.style.transform = '';
+            draftTaskPlaceholder.parentNode.insertBefore(taskBlock, draftTaskPlaceholder);
+            draftTaskPlaceholder.remove();
+            draftTaskPlaceholder = null;
+        }
+        if (draftFullscreenPlaceholder) {
+            draftFullscreenPlaceholder.parentNode.insertBefore(wrap, draftFullscreenPlaceholder);
+            draftFullscreenPlaceholder.remove();
+            draftFullscreenPlaceholder = null;
+        }
     }
 
     wrap.classList.toggle('draft-fullscreen', draftIsFullscreen);
     btn.classList.toggle('active', draftIsFullscreen);
     document.body.classList.toggle('draft-fullscreen-open', draftIsFullscreen);
+    if (modeToggle) modeToggle.classList.toggle('hidden', draftIsFullscreen);
     resizeDraftCanvas();
+
+    if (draftIsFullscreen) {
+        const canvas = document.getElementById('l-draft-canvas');
+        const pinBlock = document.getElementById('l-character-row');
+        if (canvas && pinBlock) {
+            const blockWidth = pinBlock.offsetWidth;
+
+            if (!draftStrokesShiftedForFullscreen && draftStrokes.length > 0) {
+                const shiftAmount = 16 + blockWidth + 40;
+                draftStrokes.forEach(stroke => {
+                    stroke.points.forEach(p => { p.x += shiftAmount; });
+                });
+                pushDraftHistory();
+                draftStrokesShiftedForFullscreen = true;
+            }
+
+            const availableWidth = canvas.parentElement.clientWidth;
+            const anchor = 16;
+            draftPanX = (availableWidth - blockWidth * draftZoom) / 2 - anchor * draftZoom;
+            redrawDraftCanvas();
+        }
+    }
 }
 function setDraftColor(color) {
     draftColor = color;
@@ -279,6 +348,7 @@ function updateDraftHistoryButtons() {
 // Вызывается из loadTask() в script.js при переходе к новому заданию
 function resetDraftCanvasForNewTask() {
     if (draftIsFullscreen) toggleDraftFullscreen();
+    draftStrokesShiftedForFullscreen = false;
     draftStrokes = [];
     draftCurrentStroke = null;
     draftHistory = [];
