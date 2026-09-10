@@ -302,14 +302,18 @@
 
         <main class="lesson-main" id="l-main">
             <h1 class="lesson-title" id="l-title"></h1>
-            <div class="character-row bounce-in delay-1">
-                <div class="example-bubble" id="l-example-bubble"></div>
-            </div>
+            <div class="character-row bounce-in delay-1" id="l-character-row">
+    <div class="example-bubble" id="l-example-bubble"></div>
+</div>
             <div class="bounce-in delay-2" id="l-draft-container">
     <label class="input-label">📝 Блокнот (Черновик)</label>
     <div class="draft-input-wrap" id="l-draft-input-group">
     <math-field class="lesson-input" id="l-draft" math-virtual-keyboard-policy="manual"></math-field>
     <canvas id="l-draft-canvas" class="draft-canvas hidden"></canvas>
+<canvas id="l-draft-canvas" class="draft-canvas hidden"></canvas>
+<div class="draft-mode-corner" id="draft-mode-corner">
+    <button type="button" class="draft-tool-btn" id="draft-mode-toggle" onclick="toggleDraftDrawMode()" title="Текст / Рисование">🖊</button>
+</div>
     <div class="draft-top-controls hidden" id="draft-top-controls">
     <button type="button" class="draft-fullscreen-btn" id="draft-fullscreen-btn" onclick="toggleDraftFullscreen()" title="Во весь экран">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
@@ -333,10 +337,10 @@
             <path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>
         </svg>
     </button>
+    <div class="draft-undo-redo-divider" id="draft-mode-divider"></div>
 </div>
-    <div class="draft-toolbar-attached" id="draft-toolbar">
-            <button type="button" class="draft-tool-btn" id="draft-mode-toggle" onclick="toggleDraftDrawMode()" title="Текст / Рисование">🖊</button>
-            <button type="button" class="draft-tool-btn hidden active" id="draft-tool-pen" onclick="setDraftTool('pen')" title="Кисть">✏️</button>
+    <div class="draft-toolbar-attached hidden" id="draft-toolbar">
+    <button type="button" class="draft-tool-btn hidden active" id="draft-tool-pen" onclick="setDraftTool('pen')" title="Кисть">✏️</button>
             <button type="button" class="draft-tool-btn hidden" id="draft-tool-eraser" onclick="setDraftTool('eraser')" title="Ластик">🧽</button>
 <div class="draft-color-wrap hidden" id="draft-color-wrap">
     <button type="button" class="draft-tool-btn" id="draft-color-btn" onclick="toggleDraftColorPicker()" title="Цвет">
