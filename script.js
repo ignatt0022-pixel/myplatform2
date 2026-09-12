@@ -306,7 +306,6 @@ let currentTopicBaseId = null;
         let lessonErrors = 0;
         let selectedOptionIndex = null;
         let selectedOptionIndices = new Set();
-        let detailsSequence = [];
 
         // Инициализация при загрузке
         function preprocessCourseData() {
@@ -1461,141 +1460,6 @@ currentLessonFailedTasks = [];
             return !!task && typeof task.type === 'string' && task.type.trim().toLowerCase() === 'multiple options';
         }
 
-        // Задание типа "details" — собрать ответ из отдельных кнопок-деталей,
-        // порядок нажатия имеет значение. Возвращает количество деталей (0, если это не такой тип).
-        function getDetailsCount(task) {
-            if (!task || typeof task.type !== 'string' || task.type.trim().toLowerCase() !== 'details') return 0;
-            let count = 0;
-            while (task[`${count + 1} detail`] !== undefined) count++;
-            return count;
-        }
-
-        // Рисует кнопки-детали в "банке" для задания типа "details"
-        function renderDetails(task, detailsCount) {
-            const bank = document.getElementById('l-details-bank');
-            const answer = document.getElementById('l-details-answer');
-            bank.innerHTML = '';
-            answer.innerHTML = '';
-            answer.style.minHeight = '';
-            detailsSequence = [];
-
-            for (let i = 1; i <= detailsCount; i++) {
-                const chip = document.createElement('button');
-                chip.type = 'button';
-                chip.className = 'detail-chip';
-                chip.dataset.detailIndex = i;
-                chip.innerHTML = autoWrapMath(String(task[`${i} detail`]));
-                chip.onclick = () => toggleDetail(i);
-                bank.appendChild(chip);
-            }
-
-            // Заранее резервируем в поле ответа столько высоты, сколько заняли бы там все
-            // детали разом — чтобы блок сразу был нужного размера и не "прыгал" при добавлении
-            const reserveAnswerHeight = () => {
-                const clones = Array.from(bank.children).map(c => c.cloneNode(true));
-                clones.forEach(c => { c.disabled = false; c.classList.remove('used'); answer.appendChild(c); });
-                answer.style.minHeight = answer.scrollHeight + 'px';
-                clones.forEach(c => c.remove());
-            };
-
-            if (window.MathJax) {
-                MathJax.typesetPromise([bank]).then(reserveAnswerHeight).catch((err) => {
-                    console.log(err.message);
-                    reserveAnswerHeight();
-                });
-            } else {
-                reserveAnswerHeight();
-            }
-        }
-
-        // Обрабатывает клик по детали. Кнопка в банке при использовании никуда не убирается
-        // и не двигает соседей — она просто становится невидимой на своём месте, а в поле
-        // ответа появляется её копия, которая "прилетает" туда с анимацией.
-        function toggleDetail(index) {
-            const bank = document.getElementById('l-details-bank');
-            const answer = document.getElementById('l-details-answer');
-            const bankChip = bank.querySelector(`.detail-chip[data-detail-index="${index}"]`);
-            if (!bankChip) return;
-
-            if (detailsSequence.includes(index)) {
-                // Убираем деталь из ответа обратно в банк — банк остаётся неподвижным
-                detailsSequence = detailsSequence.filter(i => i !== index);
-                const answerChip = answer.querySelector(`.detail-chip[data-detail-index="${index}"]`);
-                if (!answerChip) { bankChip.classList.remove('used'); return; }
-
-                const bankRect = bankChip.getBoundingClientRect();
-                const answerRect = answerChip.getBoundingClientRect();
-                const dx = bankRect.left - answerRect.left;
-                const dy = bankRect.top - answerRect.top;
-
-                // Стартуем от текущего (уже отрисованного) состояния — движение получится настоящим,
-                // а не мгновенным скачком в конечную точку. Прозрачность не трогаем — деталь
-                // летит полностью видимой и сменяется открывшейся кнопкой банка точно в момент прибытия
-                answerChip.style.transition = 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)';
-                requestAnimationFrame(() => {
-                    answerChip.style.transform = `translate(${dx}px, ${dy}px)`;
-                });
-
-                setTimeout(() => {
-                    const siblings = Array.from(answer.querySelectorAll('.detail-chip')).filter(c => c !== answerChip);
-                    const firstRects = new Map(siblings.map(c => [c, c.getBoundingClientRect()]));
-
-                    answerChip.remove();
-                    bankChip.style.transition = 'none';
-                    bankChip.classList.remove('used');
-                    void bankChip.offsetWidth;
-                    bankChip.style.transition = '';
-
-                    siblings.forEach(c => {
-                        const first = firstRects.get(c);
-                        const last = c.getBoundingClientRect();
-                        const sdx = first.left - last.left;
-                        const sdy = first.top - last.top;
-                        if (sdx || sdy) {
-                            c.style.transition = 'none';
-                            c.style.transform = `translate(${sdx}px, ${sdy}px)`;
-                        }
-                    });
-                    void answer.offsetWidth;
-                    requestAnimationFrame(() => {
-                        siblings.forEach(c => {
-                            c.style.transition = 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)';
-                            c.style.transform = '';
-                        });
-                    });
-                }, 400);
-            } else {
-                // Переносим деталь в ответ: копия летит из точки, где была кнопка в банке
-                detailsSequence.push(index);
-                const bankRect = bankChip.getBoundingClientRect();
-
-                const answerChip = document.createElement('button');
-                answerChip.type = 'button';
-                answerChip.className = 'detail-chip placed';
-                answerChip.dataset.detailIndex = index;
-                answerChip.innerHTML = bankChip.innerHTML;
-                answerChip.onclick = () => toggleDetail(index);
-                answer.appendChild(answerChip);
-
-                const answerRect = answerChip.getBoundingClientRect();
-                const dx = bankRect.left - answerRect.left;
-                const dy = bankRect.top - answerRect.top;
-
-                answerChip.style.transition = 'none';
-                answerChip.style.transform = `translate(${dx}px, ${dy}px)`;
-                void answerChip.offsetWidth;
-                requestAnimationFrame(() => {
-                    answerChip.style.transition = 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)';
-                    answerChip.style.transform = '';
-                });
-
-                bankChip.style.transition = 'none';
-                bankChip.classList.add('used');
-                void bankChip.offsetWidth;
-                bankChip.style.transition = '';
-            }
-        }
-
         // Если сразу после ключа "N option" в JSON идёт ключ "graphXXX" с непустым
         // массивом команд — этот график привязан к варианту N и рисуется прямо в кнопке.
         // Возвращает имя ключа графика или null, если такого нет.
@@ -1733,7 +1597,6 @@ currentLessonFailedTasks = [];
             const lAnswerContainer = document.getElementById('l-answer-container');
             const lDraftContainer = document.getElementById('l-draft-container');
             const lOptionsContainer = document.getElementById('l-options-container');
-            const lDetailsContainer = document.getElementById('l-details-container');
             
             lAnswer.value = '';
             lAnswer.disabled = false;
@@ -1743,14 +1606,12 @@ currentLessonFailedTasks = [];
 
             const btnCheck = document.getElementById('btn-check');
             const btnNext = document.getElementById('btn-next');
-            const detailsCount = getDetailsCount(task);
 
             if (!task.correctAnswer || task.correctAnswer.trim() === "") {
                 // Режим теории (нет правильного ответа)
                 lDraftContainer.style.display = 'none';
                 lAnswerContainer.style.display = 'none';
                 lOptionsContainer.style.display = 'none';
-                lDetailsContainer.style.display = 'none';
                 btnCheck.classList.add('hidden');
                 btnNext.classList.remove('hidden');
                 document.getElementById('btn-next-text').innerText = 'Понятно';
@@ -1759,23 +1620,13 @@ currentLessonFailedTasks = [];
                 lDraftContainer.style.display = '';
                 lAnswerContainer.style.display = 'none';
                 lOptionsContainer.style.display = '';
-                lDetailsContainer.style.display = 'none';
                 renderOptions(task, optionsCount);
-                document.getElementById('btn-next-text').innerText = 'Дальше';
-            } else if (detailsCount > 0) {
-                // Режим сборки ответа из деталей
-                lDraftContainer.style.display = '';
-                lAnswerContainer.style.display = 'none';
-                lOptionsContainer.style.display = 'none';
-                lDetailsContainer.style.display = '';
-                renderDetails(task, detailsCount);
                 document.getElementById('btn-next-text').innerText = 'Дальше';
             } else {
                 // Режим практики (ввод ответа)
                 lDraftContainer.style.display = '';
                 lAnswerContainer.style.display = '';
                 lOptionsContainer.style.display = 'none';
-                lDetailsContainer.style.display = 'none';
                 document.getElementById('btn-next-text').innerText = 'Дальше';
             }
 
@@ -2137,20 +1988,6 @@ function copyLessonCode() {
             }
             selectedOptionIndex = null;
             selectedOptionIndices.clear();
-
-            const detailsBank = document.getElementById('l-details-bank');
-            const detailsAnswer = document.getElementById('l-details-answer');
-            if (detailsBank && detailsAnswer) {
-                detailsAnswer.innerHTML = '';
-                detailsBank.querySelectorAll('.detail-chip').forEach(chip => {
-                    chip.disabled = false;
-                    chip.classList.remove('used', 'correct', 'wrong', 'shake');
-                    chip.style.transform = '';
-                    chip.style.transition = '';
-                    chip.style.opacity = '';
-                });
-            }
-            detailsSequence = [];
             
             const footer = document.getElementById('l-footer');
             footer.className = 'lesson-footer';
@@ -2225,12 +2062,6 @@ function copyLessonCode() {
 
             if (optionsCount > 0) {
                 checkOptionsAnswer(task);
-                return;
-            }
-
-            const detailsCount = getDetailsCount(task);
-            if (detailsCount > 0) {
-                checkDetailsAnswer(task);
                 return;
             }
 
@@ -2482,65 +2313,6 @@ function copyLessonCode() {
             }, 150);
         }
 
-        // Проверка ответа для заданий типа "details" (собери ответ из деталей по порядку)
-        function checkDetailsAnswer(task) {
-            if (detailsSequence.length === 0) return; // ничего не собрано — проверять нечего
-
-            const footer = document.getElementById('l-footer');
-            const answer = document.getElementById('l-details-answer');
-            const bank = document.getElementById('l-details-bank');
-            const isSuccess = (detailsSequence.join('') === String(task.correctAnswer).trim());
-
-            if (!isSuccess) {
-                lessonErrors++;
-                const taskNum = currentTaskIndex + 1;
-                if (!currentLessonFailedTasks.includes(taskNum)) {
-                    currentLessonFailedTasks.push(taskNum);
-                }
-            }
-
-            setTimeout(() => {
-                animateFooterOpen(isSuccess, () => {
-                    answer.querySelectorAll('.detail-chip').forEach(chip => { chip.disabled = true; });
-                    bank.querySelectorAll('.detail-chip').forEach(chip => { chip.disabled = true; });
-
-                    if (isSuccess) {
-                        footer.className = 'lesson-footer state-success';
-                        document.getElementById('l-feedback-area').style.display = 'flex';
-                        document.getElementById('l-feedback-title').innerHTML = '<span>✔</span> Отлично!';
-                        document.getElementById('l-feedback-explanation').innerHTML = '';
-
-                        document.getElementById('btn-check').classList.add('hidden');
-                        document.getElementById('btn-next').classList.remove('hidden');
-                        document.getElementById('btn-explain').classList.remove('hidden');
-
-                        answer.querySelectorAll('.detail-chip').forEach(chip => chip.classList.add('correct'));
-
-                        if (!currentLesson.isGenerator && currentTaskIndex === currentLesson.tasks.length - 1) {
-                            const progressFill = document.getElementById('l-progress-fill');
-                            if (progressFill) progressFill.style.width = '100%';
-                        }
-                    } else {
-                        footer.className = 'lesson-footer state-error';
-                        document.getElementById('l-feedback-area').style.display = 'flex';
-                        document.getElementById('l-feedback-title').innerHTML = '<span>✖</span> Неверно!';
-                        document.getElementById('l-feedback-explanation').innerHTML = '';
-
-                        document.getElementById('btn-check').classList.add('hidden');
-                        document.getElementById('btn-retry').classList.remove('hidden');
-                        document.getElementById('btn-explain').classList.remove('hidden');
-
-                        answer.querySelectorAll('.detail-chip').forEach(chip => {
-                            chip.classList.add('wrong');
-                            chip.classList.remove('shake');
-                            void chip.offsetWidth;
-                            chip.classList.add('shake');
-                        });
-                    }
-                });
-            }, 150);
-        }
-
         function animateFooterClose(callback) {
             const footer = document.getElementById('l-footer');
             const footerContent = footer.querySelector('.footer-content');
@@ -2720,13 +2492,9 @@ function copyLessonCode() {
                             expContainer.appendChild(graphBox);
                         } else {
                             let ca;
-                            const detailsCount = getDetailsCount(task);
                             if (optionsCount > 0) {
                                 const optionText = task[`${task.correctAnswer} option`];
                                 ca = autoWrapMath(String(optionText !== undefined ? optionText : task.correctAnswer));
-                            } else if (detailsCount > 0) {
-                                const order = String(task.correctAnswer).trim().split('').map(d => parseInt(d, 10));
-                                ca = autoWrapMath(order.map(idx => String(task[`${idx} detail`] !== undefined ? task[`${idx} detail`] : idx)).join(' '));
                             } else {
                                 ca = task.correctAnswer;
                                 if (!ca.includes('$') && !ca.includes('\\(') && !ca.includes('\\[')) {
