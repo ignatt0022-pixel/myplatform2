@@ -460,42 +460,6 @@ body {
         .option-graph-caption { font-size: 15px; }
         .explanation-graph-box { box-sizing: border-box; margin: 0 !important; }
 
-        /* Задания с деталями (собери ответ из кнопок) */
-        .details-answer-area {
-            min-height: 60px;
-            border: 2px solid var(--border-color);
-            border-radius: 16px;
-            padding: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-start;
-            align-content: flex-start;
-            gap: 10px;
-            margin-bottom: 14px;
-            box-sizing: border-box;
-            transition: border-color 0.2s;
-        }
-        .details-bank { display: flex; flex-wrap: wrap; gap: 10px; }
-        .detail-chip {
-            background-color: #ffffff;
-            border: 3px solid var(--border-color);
-            box-shadow: 0 4px 0 var(--border-color);
-            border-radius: 14px;
-            padding: 10px 18px;
-            font-size: 16px;
-            font-weight: 800;
-            font-family: 'Nunito', sans-serif;
-            color: #4b4b4b;
-            cursor: pointer;
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.15s, border-color 0.15s, background-color 0.15s, color 0.15s, opacity 0.15s;
-        }
-        .detail-chip:active { transform: translateY(4px) !important; box-shadow: 0 0px 0 transparent !important; }
-        .detail-chip.used { opacity: 0; pointer-events: none; }
-       .detail-chip.placed { z-index: 5; }
-        .detail-chip.correct { border-color: var(--success-color); box-shadow: 0 4px 0 var(--success-color); color: var(--success-color); background-color: var(--success-bg); }
-        .detail-chip.wrong { border-color: var(--error-color); box-shadow: 0 4px 0 var(--error-color); color: var(--error-color); }
-        .detail-chip:disabled { cursor: default; pointer-events: none; }
-
 math-field::part(virtual-keyboard-toggle) { display: none !important; }
         math-field::part(menu-toggle) { display: none !important; }
         
