@@ -1470,30 +1470,13 @@ currentLessonFailedTasks = [];
             return count;
         }
 
-        // FLIP-анимация: элемент плавно "долетает" из своей позиции до места, куда его переместил moveFn()
-        function flipMove(el, moveFn) {
-            const first = el.getBoundingClientRect();
-            moveFn();
-            const last = el.getBoundingClientRect();
-            const dx = first.left - last.left;
-            const dy = first.top - last.top;
-            if (dx || dy) {
-                el.style.transition = 'none';
-                el.style.transform = `translate(${dx}px, ${dy}px)`;
-                void el.offsetWidth;
-                requestAnimationFrame(() => {
-                    el.style.transition = 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                    el.style.transform = '';
-                });
-            }
-        }
-
         // Рисует кнопки-детали в "банке" для задания типа "details"
         function renderDetails(task, detailsCount) {
             const bank = document.getElementById('l-details-bank');
             const answer = document.getElementById('l-details-answer');
             bank.innerHTML = '';
             answer.innerHTML = '';
+            answer.style.minHeight = '';
             detailsSequence = [];
 
             for (let i = 1; i <= detailsCount; i++) {
@@ -1505,53 +1488,111 @@ currentLessonFailedTasks = [];
                 chip.onclick = () => toggleDetail(i);
                 bank.appendChild(chip);
             }
+
+            // Заранее резервируем в поле ответа столько высоты, сколько заняли бы там все
+            // детали разом — чтобы блок сразу был нужного размера и не "прыгал" при добавлении
+            const reserveAnswerHeight = () => {
+                const clones = Array.from(bank.children).map(c => c.cloneNode(true));
+                clones.forEach(c => { c.disabled = false; c.classList.remove('used'); answer.appendChild(c); });
+                answer.style.minHeight = answer.scrollHeight + 'px';
+                clones.forEach(c => c.remove());
+            };
+
             if (window.MathJax) {
-                MathJax.typesetPromise([bank]).catch((err) => console.log(err.message));
+                MathJax.typesetPromise([bank]).then(reserveAnswerHeight).catch((err) => {
+                    console.log(err.message);
+                    reserveAnswerHeight();
+                });
+            } else {
+                reserveAnswerHeight();
             }
         }
 
-        // Обрабатывает клик по детали: переносит её между банком и полем ответа с анимацией
+        // Обрабатывает клик по детали. Кнопка в банке при использовании никуда не убирается
+        // и не двигает соседей — она просто становится невидимой на своём месте, а в поле
+        // ответа появляется её копия, которая "прилетает" туда с анимацией.
         function toggleDetail(index) {
             const bank = document.getElementById('l-details-bank');
             const answer = document.getElementById('l-details-answer');
-            const chip = document.querySelector(`.detail-chip[data-detail-index="${index}"]`);
-            if (!chip) return;
+            const bankChip = bank.querySelector(`.detail-chip[data-detail-index="${index}"]`);
+            if (!bankChip) return;
 
             if (detailsSequence.includes(index)) {
-                // Убираем деталь из ответа обратно в банк, банк пересобираем по возрастанию номеров
+                // Убираем деталь из ответа обратно в банк — банк остаётся неподвижным
                 detailsSequence = detailsSequence.filter(i => i !== index);
+                const answerChip = answer.querySelector(`.detail-chip[data-detail-index="${index}"]`);
+                if (!answerChip) { bankChip.classList.remove('used'); return; }
 
-                const bankChips = Array.from(bank.children);
-                const allChips = bankChips.concat(chip);
-                const firstRects = new Map(allChips.map(c => [c, c.getBoundingClientRect()]));
+                const bankRect = bankChip.getBoundingClientRect();
+                const answerRect = answerChip.getBoundingClientRect();
+                const dx = bankRect.left - answerRect.left;
+                const dy = bankRect.top - answerRect.top;
 
-                const sorted = allChips.slice().sort((a, b) => parseInt(a.dataset.detailIndex, 10) - parseInt(b.dataset.detailIndex, 10));
-                sorted.forEach(c => bank.appendChild(c));
-                chip.classList.remove('placed');
-
-                sorted.forEach(c => {
-                    const first = firstRects.get(c);
-                    const last = c.getBoundingClientRect();
-                    const dx = first.left - last.left;
-                    const dy = first.top - last.top;
-                    if (dx || dy) {
-                        c.style.transition = 'none';
-                        c.style.transform = `translate(${dx}px, ${dy}px)`;
-                    }
-                });
-                void bank.offsetWidth;
+                // Стартуем от текущего (уже отрисованного) состояния — движение получится настоящим,
+                // а не мгновенным скачком в конечную точку. Прозрачность не трогаем — деталь
+                // летит полностью видимой и сменяется открывшейся кнопкой банка точно в момент прибытия
+                answerChip.style.transition = 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)';
                 requestAnimationFrame(() => {
-                    sorted.forEach(c => {
-                        c.style.transition = 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                        c.style.transform = '';
+                    answerChip.style.transform = `translate(${dx}px, ${dy}px)`;
+                });
+
+                setTimeout(() => {
+                    const siblings = Array.from(answer.querySelectorAll('.detail-chip')).filter(c => c !== answerChip);
+                    const firstRects = new Map(siblings.map(c => [c, c.getBoundingClientRect()]));
+
+                    answerChip.remove();
+                    bankChip.style.transition = 'none';
+                    bankChip.classList.remove('used');
+                    void bankChip.offsetWidth;
+                    bankChip.style.transition = '';
+
+                    siblings.forEach(c => {
+                        const first = firstRects.get(c);
+                        const last = c.getBoundingClientRect();
+                        const sdx = first.left - last.left;
+                        const sdy = first.top - last.top;
+                        if (sdx || sdy) {
+                            c.style.transition = 'none';
+                            c.style.transform = `translate(${sdx}px, ${sdy}px)`;
+                        }
                     });
-                });
+                    void answer.offsetWidth;
+                    requestAnimationFrame(() => {
+                        siblings.forEach(c => {
+                            c.style.transition = 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)';
+                            c.style.transform = '';
+                        });
+                    });
+                }, 400);
             } else {
+                // Переносим деталь в ответ: копия летит из точки, где была кнопка в банке
                 detailsSequence.push(index);
-                flipMove(chip, () => {
-                    answer.appendChild(chip);
-                    chip.classList.add('placed');
+                const bankRect = bankChip.getBoundingClientRect();
+
+                const answerChip = document.createElement('button');
+                answerChip.type = 'button';
+                answerChip.className = 'detail-chip placed';
+                answerChip.dataset.detailIndex = index;
+                answerChip.innerHTML = bankChip.innerHTML;
+                answerChip.onclick = () => toggleDetail(index);
+                answer.appendChild(answerChip);
+
+                const answerRect = answerChip.getBoundingClientRect();
+                const dx = bankRect.left - answerRect.left;
+                const dy = bankRect.top - answerRect.top;
+
+                answerChip.style.transition = 'none';
+                answerChip.style.transform = `translate(${dx}px, ${dy}px)`;
+                void answerChip.offsetWidth;
+                requestAnimationFrame(() => {
+                    answerChip.style.transition = 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)';
+                    answerChip.style.transform = '';
                 });
+
+                bankChip.style.transition = 'none';
+                bankChip.classList.add('used');
+                void bankChip.offsetWidth;
+                bankChip.style.transition = '';
             }
         }
 
@@ -2100,15 +2141,13 @@ function copyLessonCode() {
             const detailsBank = document.getElementById('l-details-bank');
             const detailsAnswer = document.getElementById('l-details-answer');
             if (detailsBank && detailsAnswer) {
-                const allChips = Array.from(detailsAnswer.querySelectorAll('.detail-chip'))
-                    .concat(Array.from(detailsBank.querySelectorAll('.detail-chip')))
-                    .sort((a, b) => parseInt(a.dataset.detailIndex, 10) - parseInt(b.dataset.detailIndex, 10));
-                allChips.forEach(chip => {
+                detailsAnswer.innerHTML = '';
+                detailsBank.querySelectorAll('.detail-chip').forEach(chip => {
                     chip.disabled = false;
-                    chip.classList.remove('placed', 'correct', 'wrong', 'shake');
+                    chip.classList.remove('used', 'correct', 'wrong', 'shake');
                     chip.style.transform = '';
                     chip.style.transition = '';
-                    detailsBank.appendChild(chip);
+                    chip.style.opacity = '';
                 });
             }
             detailsSequence = [];
