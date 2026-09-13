@@ -1456,9 +1456,15 @@ currentLessonFailedTasks = [];
             return match ? parseInt(match[1], 10) : 0;
         }
 
-        // Задание типа "multiple options" — можно выбрать сразу несколько вариантов
+        // Задание типа "multiple options" — можно выбрать сразу несколько вариантов.
+        // Также включаем этот режим для обычного типа "options", если в correctAnswer
+        // записано несколько цифр подряд (например, "13" = правильные варианты 1 и 3)
         function isMultiSelect(task) {
-            return !!task && typeof task.type === 'string' && task.type.trim().toLowerCase() === 'multiple options';
+            if (!task || typeof task.type !== 'string') return false;
+            const type = task.type.trim().toLowerCase();
+            if (type === 'multiple options') return true;
+            if (type === 'options' && task.correctAnswer && String(task.correctAnswer).trim().length > 1) return true;
+            return false;
         }
 
         // Задание типа "details" — собрать ответ из отдельных кнопок-деталей,
@@ -3951,4 +3957,4 @@ function createGraphBox(graphCommands) {
 
     graphWrapper.appendChild(iframe);
     return graphWrapper;
-      } 
+      }
