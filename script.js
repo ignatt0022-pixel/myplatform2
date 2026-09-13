@@ -1516,6 +1516,7 @@ currentLessonFailedTasks = [];
                 const answerChip = answer.querySelector(`.detail-chip[data-detail-index="${index}"]`);
                 if (!answerChip) { bankChip.classList.remove('used'); return; }
 answerChip.classList.add('removing');
+                answerChip.classList.remove('wrong', 'correct');
                 const bankRect = bankChip.getBoundingClientRect();
                 const answerRect = answerChip.getBoundingClientRect();
                 const dx = bankRect.left - answerRect.left;
@@ -2136,14 +2137,10 @@ function copyLessonCode() {
             const detailsBank = document.getElementById('l-details-bank');
             const detailsAnswer = document.getElementById('l-details-answer');
             if (detailsBank && detailsAnswer) {
-                detailsAnswer.innerHTML = '';
-                detailsBank.querySelectorAll('.detail-chip').forEach(chip => {
-                    chip.disabled = false;
-                    chip.classList.remove('used', 'correct', 'wrong', 'shake');
-                    chip.style.transform = '';
-                    chip.style.transition = '';
-                    chip.style.opacity = '';
-                });
+                // Используем ту же функцию, что и при обычном клике по детали в ответе —
+                // она уже умеет плавно отправлять деталь обратно в банк
+                [...detailsSequence].forEach(index => toggleDetail(index));
+                detailsBank.querySelectorAll('.detail-chip').forEach(chip => { chip.disabled = false; });
             }
             detailsSequence = [];
             
@@ -2509,7 +2506,11 @@ function copyLessonCode() {
                         document.getElementById('btn-next').classList.remove('hidden');
                         document.getElementById('btn-explain').classList.remove('hidden');
 
-                        answer.querySelectorAll('.detail-chip').forEach(chip => chip.classList.add('correct'));
+                        answer.querySelectorAll('.detail-chip').forEach((chip, i) => {
+                            chip.classList.add('correct');
+                            chip.style.animationDelay = (i * 80) + 'ms';
+                            chip.classList.add('jump');
+                        });
 
                         if (!currentLesson.isGenerator && currentTaskIndex === currentLesson.tasks.length - 1) {
                             const progressFill = document.getElementById('l-progress-fill');
