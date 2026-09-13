@@ -446,7 +446,9 @@ body {
     text-align: center;
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s, background-color 0.2s, color 0.2s;
 }
-.option-btn:hover { border-color: var(--lesson-accent); box-shadow: 0 6px 0 var(--lesson-accent); }
+@media (hover: hover) and (pointer: fine) {
+    .option-btn:hover { border-color: #b0b0b0; box-shadow: 0 6px 0 #b0b0b0; }
+}
 .option-btn:active { transform: translateY(4px) !important; box-shadow: 0 0px 0 transparent !important; }
 .option-btn.selected { border-color: var(--lesson-accent); box-shadow: 0 4px 0 var(--lesson-accent); color: var(--lesson-accent); background-color: #eaf7ff; }
         .option-btn.correct { border-color: var(--success-color); box-shadow: 0 4px 0 var(--success-color); color: var(--success-color); background-color: var(--success-bg); }
