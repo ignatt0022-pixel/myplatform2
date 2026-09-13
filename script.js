@@ -1460,6 +1460,15 @@ currentLessonFailedTasks = [];
             return !!task && typeof task.type === 'string' && task.type.trim().toLowerCase() === 'multiple options';
         }
 
+// Определяет число деталей у задания типа "details" (0, если это не такой тип)
+        function getDetailsCount(task) {
+            if (!task || typeof task.type !== 'string') return 0;
+            if (task.type.trim().toLowerCase() !== 'details') return 0;
+            let count = 0;
+            while (task[`${count + 1} detail`] !== undefined) count++;
+            return count;
+        }
+
         // Если сразу после ключа "N option" в JSON идёт ключ "graphXXX" с непустым
         // массивом команд — этот график привязан к варианту N и рисуется прямо в кнопке.
         // Возвращает имя ключа графика или null, если такого нет.
@@ -1532,6 +1541,218 @@ currentLessonFailedTasks = [];
             });
         }
 
+        let detailsAnswerOrder = [];
+        let detailsPoolOrder = [];
+
+        // Простая перетасовка Фишера-Йейтса
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Рисует пул деталей и очищает поле ответа для задания типа "details"
+        function renderDetails(task, detailsCount) {
+            const pool = document.getElementById('l-details-pool');
+            const answer = document.getElementById('l-details-answer');
+            pool.innerHTML = '';
+            answer.innerHTML = '';
+            detailsAnswerOrder = [];
+
+            const indices = [];
+            for (let i = 1; i <= detailsCount; i++) indices.push(i);
+            detailsPoolOrder = (task['in order'] === true) ? indices : shuffleArray(indices.slice());
+
+            detailsPoolOrder.forEach(i => {
+                const detailText = task[`${i} detail`];
+                const slot = document.createElement('div');
+                slot.className = 'detail-pool-slot';
+                slot.dataset.detailIndex = i;
+
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'detail-chip';
+                chip.dataset.detailIndex = i;
+                chip.id = `detail-chip-${i}`;
+                chip.innerHTML = autoWrapMath(String(detailText !== undefined ? detailText : ''));
+                chip.onclick = () => toggleDetail(i, task);
+
+                slot.appendChild(chip);
+                pool.appendChild(slot);
+            });
+
+            // Размер слота фиксируем ПОСЛЕ типографики MathJax, иначе рамка "прыгнет"
+            const freezeSlotSizes = () => {
+                pool.querySelectorAll('.detail-pool-slot').forEach(s => {
+                    const r = s.getBoundingClientRect();
+                    s.style.width = r.width + 'px';
+                    s.style.height = r.height + 'px';
+                });
+            };
+            if (window.MathJax) {
+                MathJax.typesetPromise([pool]).then(freezeSlotSizes).catch((err) => { console.log(err.message); freezeSlotSizes(); });
+            } else {
+                freezeSlotSizes();
+            }
+        }
+
+        // Клик по детали — решает, добавить её в ответ или вернуть в пул
+        function toggleDetail(i, task) {
+            if (detailsAnswerOrder.includes(i)) {
+                deselectDetail(i);
+            } else {
+                selectDetail(i);
+            }
+        }
+
+        function selectDetail(i) {
+            const chip = document.getElementById(`detail-chip-${i}`);
+            if (!chip || chip.classList.contains('flying')) return;
+            const answerRow = document.getElementById('l-details-answer');
+            detailsAnswerOrder.push(i);
+            flyChipToContainer(chip, answerRow, null);
+        }
+
+        function deselectDetail(i) {
+            const chip = document.getElementById(`detail-chip-${i}`);
+            if (!chip || chip.classList.contains('flying')) return;
+            const idx = detailsAnswerOrder.indexOf(i);
+            if (idx === -1) return;
+
+            const answerRow = document.getElementById('l-details-answer');
+            const poolSlot = document.querySelector(`.detail-pool-slot[data-detail-index="${i}"]`);
+
+            // Запоминаем позиции соседних деталей ДО удаления — чтобы плавно сдвинуть их
+            const remainingChips = Array.from(answerRow.children).filter(el => el !== chip);
+            const oldRects = new Map(remainingChips.map(el => [el, el.getBoundingClientRect()]));
+
+            detailsAnswerOrder.splice(idx, 1);
+
+            flyChipToContainer(chip, poolSlot, null);
+            playFlip(remainingChips, oldRects);
+        }
+
+        // Плавно переносит деталь в другой контейнер (между пулом и полем ответа)
+        function flyChipToContainer(chip, destContainer, insertBeforeEl, onComplete) {
+            const flightLayer = document.getElementById('details-flight-layer');
+            const startRect = chip.getBoundingClientRect();
+
+            chip.classList.add('flying');
+            flightLayer.appendChild(chip);
+            chip.style.position = 'fixed';
+            chip.style.margin = '0';
+            chip.style.left = startRect.left + 'px';
+            chip.style.top = startRect.top + 'px';
+            chip.style.width = startRect.width + 'px';
+            chip.style.height = startRect.height + 'px';
+            chip.style.transition = 'none';
+            void chip.offsetWidth;
+
+            // Временный "невидимка" нужного размера, чтобы узнать точку прибытия
+            const placeholder = document.createElement('div');
+            placeholder.style.width = startRect.width + 'px';
+            placeholder.style.height = startRect.height + 'px';
+            placeholder.style.flex = '0 0 auto';
+            if (insertBeforeEl) {
+                destContainer.insertBefore(placeholder, insertBeforeEl);
+            } else {
+                destContainer.appendChild(placeholder);
+            }
+            const targetRect = placeholder.getBoundingClientRect();
+            placeholder.remove();
+
+            const dx = targetRect.left - startRect.left;
+            const dy = targetRect.top - startRect.top;
+
+            requestAnimationFrame(() => {
+                chip.style.transition = 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                chip.style.transform = `translate(${dx}px, ${dy}px)`;
+            });
+
+            chip.addEventListener('transitionend', function handler(e) {
+                if (e.propertyName !== 'transform') return;
+                chip.removeEventListener('transitionend', handler);
+
+                chip.style.position = '';
+                chip.style.left = '';
+                chip.style.top = '';
+                chip.style.width = '';
+                chip.style.height = '';
+                chip.style.margin = '';
+                chip.style.transition = '';
+                chip.style.transform = '';
+                chip.classList.remove('flying');
+
+                if (insertBeforeEl) {
+                    destContainer.insertBefore(chip, insertBeforeEl);
+                } else {
+                    destContainer.appendChild(chip);
+                }
+                if (typeof onComplete === 'function') onComplete();
+            });
+        }
+
+        // FLIP: плавно доигрывает сдвиг деталей, которые остались в поле ответа
+        function playFlip(elements, oldRectsMap, duration = 300) {
+            elements.forEach(el => {
+                const oldRect = oldRectsMap.get(el);
+                if (!oldRect) return;
+                const newRect = el.getBoundingClientRect();
+                const dx = oldRect.left - newRect.left;
+                const dy = oldRect.top - newRect.top;
+                if (dx === 0 && dy === 0) return;
+
+                el.style.transition = 'none';
+                el.style.transform = `translate(${dx}px, ${dy}px)`;
+                void el.offsetWidth;
+
+                requestAnimationFrame(() => {
+                    el.style.transition = `transform ${duration / 1000}s cubic-bezier(0.175, 0.885, 0.32, 1.275)`;
+                    el.style.transform = '';
+                });
+
+                el.addEventListener('transitionend', function handler(e) {
+                    if (e.propertyName !== 'transform') return;
+                    el.removeEventListener('transitionend', handler);
+                    el.style.transition = '';
+                });
+            });
+        }
+
+        // Возвращает все детали в пул без анимации (используется при повторной попытке)
+        function resetDetailsSelection() {
+            if (!detailsPoolOrder || detailsPoolOrder.length === 0) return;
+            const pool = document.getElementById('l-details-pool');
+            if (!pool) return;
+
+            detailsPoolOrder.forEach(i => {
+                const chip = document.getElementById(`detail-chip-${i}`);
+                const homeSlot = pool.querySelector(`.detail-pool-slot[data-detail-index="${i}"]`);
+                if (!chip || !homeSlot) return;
+
+                chip.disabled = false;
+                chip.classList.remove('correct', 'wrong', 'shake', 'flying');
+                chip.style.position = '';
+                chip.style.left = '';
+                chip.style.top = '';
+                chip.style.width = '';
+                chip.style.height = '';
+                chip.style.margin = '';
+                chip.style.transition = '';
+                chip.style.transform = '';
+
+                if (chip.parentElement !== homeSlot) {
+                    homeSlot.appendChild(chip);
+                }
+            });
+
+            const answerRow = document.getElementById('l-details-answer');
+            if (answerRow) answerRow.innerHTML = '';
+            detailsAnswerOrder = [];
+        }
+
         function loadTask() {
             document.getElementById('l-main').scrollTop = 0;
             const task = currentLesson.tasks[currentTaskIndex];
@@ -1548,6 +1769,7 @@ currentLessonFailedTasks = [];
 
             // Графики, "привязанные" к вариантам ответа, не дублируем в основном тексте задания
             const optionsCount = getOptionsCount(task);
+            const detailsCount = getDetailsCount(task);
             const claimedGraphKeys = new Set();
             for (let i = 1; i <= optionsCount; i++) {
                 const graphKey = getOptionGraphKey(task, i);
@@ -1597,6 +1819,7 @@ currentLessonFailedTasks = [];
             const lAnswerContainer = document.getElementById('l-answer-container');
             const lDraftContainer = document.getElementById('l-draft-container');
             const lOptionsContainer = document.getElementById('l-options-container');
+            const lDetailsContainer = document.getElementById('l-details-container');
             
             lAnswer.value = '';
             lAnswer.disabled = false;
@@ -1612,6 +1835,7 @@ currentLessonFailedTasks = [];
                 lDraftContainer.style.display = 'none';
                 lAnswerContainer.style.display = 'none';
                 lOptionsContainer.style.display = 'none';
+                lDetailsContainer.style.display = 'none';
                 btnCheck.classList.add('hidden');
                 btnNext.classList.remove('hidden');
                 document.getElementById('btn-next-text').innerText = 'Понятно';
@@ -1620,13 +1844,23 @@ currentLessonFailedTasks = [];
                 lDraftContainer.style.display = '';
                 lAnswerContainer.style.display = 'none';
                 lOptionsContainer.style.display = '';
+                lDetailsContainer.style.display = 'none';
                 renderOptions(task, optionsCount);
+                document.getElementById('btn-next-text').innerText = 'Дальше';
+            } else if (detailsCount > 0) {
+                // Режим деталей (собери ответ из кусочков)
+                lDraftContainer.style.display = '';
+                lAnswerContainer.style.display = 'none';
+                lOptionsContainer.style.display = 'none';
+                lDetailsContainer.style.display = '';
+                renderDetails(task, detailsCount);
                 document.getElementById('btn-next-text').innerText = 'Дальше';
             } else {
                 // Режим практики (ввод ответа)
                 lDraftContainer.style.display = '';
                 lAnswerContainer.style.display = '';
                 lOptionsContainer.style.display = 'none';
+                lDetailsContainer.style.display = 'none';
                 document.getElementById('btn-next-text').innerText = 'Дальше';
             }
 
@@ -1988,6 +2222,7 @@ function copyLessonCode() {
             }
             selectedOptionIndex = null;
             selectedOptionIndices.clear();
+            resetDetailsSelection();
             
             const footer = document.getElementById('l-footer');
             footer.className = 'lesson-footer';
@@ -2062,6 +2297,12 @@ function copyLessonCode() {
 
             if (optionsCount > 0) {
                 checkOptionsAnswer(task);
+                return;
+            }
+
+            const detailsCount = getDetailsCount(task);
+            if (detailsCount > 0) {
+                checkDetailsAnswer(task);
                 return;
             }
 
@@ -2313,6 +2554,69 @@ function copyLessonCode() {
             }, 150);
         }
 
+// Проверка ответа для заданий типа "details" (порядок деталей должен совпадать)
+        function checkDetailsAnswer(task) {
+            const detailsCount = getDetailsCount(task);
+            if (detailsAnswerOrder.length === 0) return; // ничего не выбрано — проверять нечего
+
+            const footer = document.getElementById('l-footer');
+            const answerRow = document.getElementById('l-details-answer');
+            const userAnswer = detailsAnswerOrder.join('');
+            const correctAnswer = String(task.correctAnswer).trim();
+            const isSuccess = (userAnswer === correctAnswer && detailsAnswerOrder.length === detailsCount);
+
+            if (!isSuccess) {
+                lessonErrors++;
+                const taskNum = currentTaskIndex + 1;
+                if (!currentLessonFailedTasks.includes(taskNum)) {
+                    currentLessonFailedTasks.push(taskNum);
+                }
+            }
+
+            setTimeout(() => {
+                animateFooterOpen(isSuccess, () => {
+                    document.querySelectorAll('.detail-chip').forEach(chip => { chip.disabled = true; });
+
+                    if (isSuccess) {
+                        answerRow.querySelectorAll('.detail-chip').forEach(chip => chip.classList.add('correct'));
+
+                        footer.className = 'lesson-footer state-success';
+                        document.getElementById('l-feedback-area').style.display = 'flex';
+                        document.getElementById('l-feedback-title').innerHTML = '<span>✔</span> Отлично!';
+                        document.getElementById('l-feedback-explanation').innerHTML = '';
+
+                        document.getElementById('btn-check').classList.add('hidden');
+                        document.getElementById('btn-next').classList.remove('hidden');
+                        document.getElementById('btn-explain').classList.remove('hidden');
+
+                        if (!currentLesson.isGenerator && currentTaskIndex === currentLesson.tasks.length - 1) {
+                            const progressFill = document.getElementById('l-progress-fill');
+                            if (progressFill) progressFill.style.width = '100%';
+                        }
+                    } else {
+                        answerRow.querySelectorAll('.detail-chip').forEach((chip, pos) => {
+                            const i = parseInt(chip.dataset.detailIndex, 10);
+                            const isRight = correctAnswer[pos] !== undefined && parseInt(correctAnswer[pos], 10) === i;
+                            chip.classList.add(isRight ? 'correct' : 'wrong');
+                            if (!isRight) {
+                                chip.classList.remove('shake');
+                                void chip.offsetWidth;
+                                chip.classList.add('shake');
+                            }
+                        });
+
+                        footer.className = 'lesson-footer state-error';
+                        document.getElementById('l-feedback-area').style.display = 'flex';
+                        document.getElementById('l-feedback-title').innerHTML = '<span>✖</span> Неверно!';
+                        document.getElementById('l-feedback-explanation').innerHTML = '';
+
+                        document.getElementById('btn-check').classList.add('hidden');
+                        document.getElementById('btn-retry').classList.remove('hidden');
+                        document.getElementById('btn-explain').classList.remove('hidden');
+                    }
+                });
+            }, 150);
+        }
         function animateFooterClose(callback) {
             const footer = document.getElementById('l-footer');
             const footerContent = footer.querySelector('.footer-content');
@@ -2446,8 +2750,19 @@ function copyLessonCode() {
                 
  if (task.correctAnswer && task.correctAnswer.trim() !== "") {
                     const optionsCount = getOptionsCount(task);
+                    const detailsCount = getDetailsCount(task);
 
-                    if (optionsCount > 0 && isMultiSelect(task)) {
+                    if (detailsCount > 0) {
+                        const correctIndices = String(task.correctAnswer).trim().split('').map(d => parseInt(d, 10));
+                        const pieces = correctIndices.map(i => String(task[`${i} detail`] !== undefined ? task[`${i} detail`] : i));
+
+                        const headerDiv = document.createElement('div');
+                        headerDiv.className = 'explanation-field explanation-correct-answer';
+                        headerDiv.style.animationDelay = `${delayCount * 0.1}s`;
+                        headerDiv.innerHTML = `Правильный ответ: ${autoWrapMath(pieces.join(' → '))}`;
+                        expContainer.appendChild(headerDiv);
+                        delayCount++;
+                    } else if (optionsCount > 0 && isMultiSelect(task)) {
                         const correctIndices = String(task.correctAnswer).trim().split('').map(d => parseInt(d, 10));
                         const textPieces = [];
                         const graphPieces = [];
