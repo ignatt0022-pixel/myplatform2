@@ -458,6 +458,15 @@ body {
         .option-graph-box { margin: 0 !important; width: 100%; max-width: 220px; background-color: #ffffff; border-radius: 20px; }
         .option-graph-box iframe { pointer-events: none; }
         .option-graph-caption { font-size: 15px; }
+
+// Определяет число деталей у задания типа "details" (0, если это не такой тип)
+        function getDetailsCount(task) {
+            if (!task || typeof task.type !== 'string') return 0;
+            if (task.type.trim().toLowerCase() !== 'details') return 0;
+            let count = 0;
+            while (task[`${count + 1} detail`] !== undefined) count++;
+            return count;
+        }
         .explanation-graph-box { box-sizing: border-box; margin: 0 !important; }
 
 math-field::part(virtual-keyboard-toggle) { display: none !important; }
