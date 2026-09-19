@@ -1,3 +1,12 @@
+// Виброотклик при нажатии на любую кнопку (Android/Chrome; на iPhone Safari
+// эту функцию браузер не поддерживает — просто ничего не произойдёт)
+document.addEventListener('click', function (e) {
+    const btn = e.target.closest('button');
+    if (btn && !btn.disabled && 'vibrate' in navigator) {
+        navigator.vibrate(15);
+    }
+});
+
 function onFirebaseReady(callback) {
   if (window.firebaseReady) {
     callback(); // Firebase уже готов — запускаем сразу
