@@ -27,7 +27,7 @@
     overflow-x: hidden;
 }
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Nunito', sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
     margin: 0;
@@ -80,7 +80,8 @@ body {
            БЛОК 1: ДИЗАЙН МЕНЮ (КЛАССЫ, ТЕМЫ, ПУТЬ)
            ========================================= */
         #menu-view {
-            padding: 20px;
+    padding: 20px;
+    padding-top: calc(20px + env(safe-area-inset-top, 0px));
             display: flex;
             justify-content: center;
             align-items: flex-start;
@@ -383,7 +384,7 @@ body {
             flex-direction: column;
         }
 
-        .lesson-header { padding: 20px; display: flex; align-items: center; gap: 15px; max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box; transition: margin-top 0.3s ease, opacity 0.3s ease; }
+        .lesson-header { padding: 20px; padding-top: calc(20px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; gap: 15px; max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box; transition: margin-top 0.3s ease, opacity 0.3s ease; }
         body.keyboard-open .lesson-header { margin-top: -100px; opacity: 0; pointer-events: none; }
         .lesson-path-text { flex: 1; font-weight: 800; color: #afafaf; text-transform: uppercase; font-size: 14px; letter-spacing: 1px;}
 
@@ -889,24 +890,24 @@ math-field::part(virtual-keyboard-toggle) { display: none !important; }
         }
 
         .repetition-header {
-            background: linear-gradient(to bottom, #b35aeb 0%, #cf8df5 55%, #ffffff 100%);
-            padding: 40px 24px 80px;
-            margin: -20px -20px 0;
+    background: linear-gradient(to bottom, #b35aeb 0%, #cf8df5 55%, #ffffff 100%);
+    padding: calc(40px + env(safe-area-inset-top, 0px)) 24px 80px;
+    margin: calc(-20px - env(safe-area-inset-top, 0px)) -20px 0;
             position: relative;
             text-align: left;
         }
 
         .repetition-title {
-            font-family: 'Nunito', sans-serif;
-            font-size: 2.75rem;
-            line-height: 1;
-            font-weight: 900;
-            color: white;
-            margin: 0 0 20px;
-            letter-spacing: 0.02em;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-            text-align: left;
-        }
+    font-family: 'Nunito', sans-serif;
+    font-size: 2.75rem;
+    line-height: 1;
+    font-weight: 900;
+    color: white;
+    margin: 12px 0 20px;
+    letter-spacing: 0.02em;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    text-align: left;
+}
 
         .repetition-subtitle {
             font-family: 'Nunito', sans-serif;
@@ -1124,8 +1125,8 @@ math-field::part(virtual-keyboard-toggle) { display: none !important; }
 /* ================= ЭКРАН АККАУНТ (Account V2) ================= */
 .account-header-v2 {
     background: linear-gradient(180deg, #b35aeb 0%, #cf8df5 50%, #ffffff 100%);
-    padding: 40px 24px 64px 24px;
-    margin: -20px -20px 0;
+    padding: calc(40px + env(safe-area-inset-top, 0px)) 24px 64px 24px;
+    margin: calc(-20px - env(safe-area-inset-top, 0px)) -20px 0;
     position: relative;
 }
 
@@ -2317,4 +2318,4 @@ body.draft-fullscreen-open {
     position: relative;
     z-index: 4;
     background: transparent;
-} 
+                   }
