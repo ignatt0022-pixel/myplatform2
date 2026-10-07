@@ -1,5 +1,4 @@
-// Виброотклик при нажатии на любую кнопку (Android/Chrome; на iPhone Safari
-// эту функцию браузер не поддерживает — просто ничего не произойдёт)
+// Виброотклик при нажатии на любую кнопку
 document.addEventListener('click', function (e) {
     const btn = e.target.closest('button');
     if (btn && !btn.disabled && 'vibrate' in navigator) {
@@ -32,97 +31,140 @@ function onFirebaseReady(callback) {
         }
 
         // ===================================================
-        // СЮДА ВСТАВЛЯТЬ ССЫЛКИ НА RAW ФАЙЛЫ С ГИТХАБА (в формате JSON)
-        // Пример: "https://raw.githubusercontent.com/username/repo/main/topic1.json"
+        // база уроков
         // ===================================================
         const TOPIC_URLS = [
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/6-zadanie.json",
-  
-"https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/7-zadanie.json",
-
-"https://cdn.jsdelivr.net/gh/ignatt002/blait@main/8-zadanie.json",
+  "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/7-zadanie.json",
+  "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/8-zadanie.json",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/9-zadanie",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/10-zadanie",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/13-zadanie.json",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/14%20%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5",
-
-"https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/15-zadanie.json",
-  
-"https://cdn.jsdelivr.net/gh/ignatt002/blait@main/20-zadanie"
+  "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/15-zadanie.json",
+  "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/20-zadanie"
         ];
 
         // ===================================================
-        // СЮДА ВСТАВЛЯТЬ ССЫЛКИ НА ФАЙЛЫ СО ШПАРГАЛКАМИ (в формате JSON)
-        // Пример: "https://raw.githubusercontent.com/username/repo/main/cheatsheets.json"
+        // база шпаргалок
         // ===================================================
         const CHEAT_SHEET_URLS = [
+  "https://raw.githubusercontent.com/ignatt002/blait/refs/heads/main/Droby.json",
+  "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/theorema-pifagora.json",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/Discriminant",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/hpargalka.json",
   "https://cdn.jsdelivr.net/gh/ignatt002/blait@main/Veroatnost"
         ];
 
+        const COURSE_DATA_CACHE_KEY = 'fivecore_course_data_cache_v1';
+
+        // Применяет уже скачанные (или взятые из кеша) "сырые" данные тем/шпаргалок
+        // к COURSE_DATA и отрисовывает их — общий код для сетевого и кешированного пути
+        function applyCourseData(topicsData, csData) {
+            topicsData.forEach((data, index) => {
+                if (data.topic) {
+                    let topicCopy = JSON.parse(JSON.stringify(data.topic));
+                    topicCopy.baseId = data.topic.id;
+                    topicCopy.id = topicCopy.id + '-' + index;
+                    COURSE_DATA.topics.push(topicCopy);
+                }
+                if (data.lessons) {
+                    Object.assign(COURSE_DATA.lessons, data.lessons);
+                }
+                if (data.cheatSheets && Array.isArray(data.cheatSheets)) {
+                    data.cheatSheets.forEach(sheet => {
+                        if (!cheatSheetsConfig.find(s => s.id === sheet.id)) {
+                            cheatSheetsConfig.push(sheet);
+                        }
+                    });
+                }
+            });
+
+            csData.forEach(data => {
+                if (data.cheatSheets && Array.isArray(data.cheatSheets)) {
+                    data.cheatSheets.forEach(sheet => {
+                        if (!cheatSheetsConfig.find(s => s.id === sheet.id)) {
+                            cheatSheetsConfig.push(sheet);
+                        }
+                    });
+                }
+            });
+
+            preprocessCourseData();
+            renderTopics();
+            renderRepetitionTopics();
+        }
+
+        // Сбрасывает COURSE_DATA/cheatSheetsConfig перед повторным наполнением —
+        // нужно, когда applyCourseData вызывается второй раз в рамках одного запуска
+        function resetCourseDataState() {
+            COURSE_DATA.topics = [];
+            COURSE_DATA.lessons = {};
+            cheatSheetsConfig.length = 0;
+        }
+
+        // Скачивает свежие темы/шпаргалки с сети. При успехе — кладёт "сырые" данные
+        // в localStorage на СЛЕДУЮЩИЙ запуск (текущую сессию это не трогает).
+        // renderIfDone === true — также отрисовать результат сейчас (когда кеша не было
+        // вообще и ждать пришлось по-честному, как раньше).
+        async function fetchAndCacheCourseData(renderIfDone) {
+            const fetchPromises = TOPIC_URLS.map(url => fetch(url).then(res => {
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                return res.json();
+            }));
+            const csPromises = CHEAT_SHEET_URLS.map(url => fetch(url).then(res => {
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                return res.json();
+            }));
+
+            const [topicsData, csData] = await Promise.all([
+                Promise.all(fetchPromises),
+                Promise.all(csPromises)
+            ]);
+
+            try {
+                localStorage.setItem(COURSE_DATA_CACHE_KEY, JSON.stringify({ topicsData, csData }));
+            } catch (e) {
+                console.warn('Не удалось сохранить кеш тем:', e);
+            }
+
+            if (renderIfDone) {
+                resetCourseDataState();
+                applyCourseData(topicsData, csData);
+            }
+        }
+
         async function loadCourseData() {
             const topicsContainer = document.getElementById('topics-container');
-            
+
             if (TOPIC_URLS.length === 0) {
                 topicsContainer.innerHTML = '<div style="text-align:center; padding: 40px; color: #afafaf; font-weight: 700;">Нет добавленных тем.<br>Добавьте ссылки в массив TOPIC_URLS в коде.</div>';
                 return;
             }
 
-            topicsContainer.innerHTML = '<div style="text-align:center; padding: 40px;"><div class="topics-loading-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div style="color: #1CB0F6; font-weight: 800; font-size: 14px;">Загрузка тем</div></div>';
-
+            // Если есть кеш с прошлого запуска — показываем его СРАЗУ, без ожидания сети
+            let cached = null;
             try {
-                const fetchPromises = TOPIC_URLS.map(url => fetch(url).then(res => {
-                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                    return res.json();
-                }));
-                
-                const csPromises = CHEAT_SHEET_URLS.map(url => fetch(url).then(res => {
-                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                    return res.json();
-                }));
+                const raw = localStorage.getItem(COURSE_DATA_CACHE_KEY);
+                if (raw) cached = JSON.parse(raw);
+            } catch (e) {
+                cached = null; // битый кеш — работаем так, будто его не было
+            }
 
-                const [topicsData, csData] = await Promise.all([
-                    Promise.all(fetchPromises),
-                    Promise.all(csPromises)
-                ]);
-
-                topicsData.forEach((data, index) => {
-                    if (data.topic) {
-                        // Клонируем объект, чтобы не мутировать исходный, если ссылки одинаковые
-                        let topicCopy = JSON.parse(JSON.stringify(data.topic));
-topicCopy.baseId = data.topic.id;
-topicCopy.id = topicCopy.id + '-' + index;
-                        COURSE_DATA.topics.push(topicCopy);
-                    }
-                    if (data.lessons) {
-                        Object.assign(COURSE_DATA.lessons, data.lessons);
-                    }
-                    // Оставляем поддержку шпаргалок внутри тем для обратной совместимости
-                    if (data.cheatSheets && Array.isArray(data.cheatSheets)) {
-                        data.cheatSheets.forEach(sheet => {
-                            if (!cheatSheetsConfig.find(s => s.id === sheet.id)) {
-                                cheatSheetsConfig.push(sheet);
-                            }
-                        });
-                    }
+            if (cached && cached.topicsData && cached.csData) {
+                applyCourseData(cached.topicsData, cached.csData);
+                // обновление качаем в фоне — но НЕ перерисовываем прямо сейчас:
+                // новые данные применятся только при следующем запуске
+                fetchAndCacheCourseData(false).catch(err => {
+                    console.warn('Фоновое обновление тем не удалось (не страшно, работаем на кеше):', err);
                 });
+                return;
+            }
 
-                // Обработка отдельных файлов со шпаргалками
-                csData.forEach(data => {
-                    if (data.cheatSheets && Array.isArray(data.cheatSheets)) {
-                        data.cheatSheets.forEach(sheet => {
-                            if (!cheatSheetsConfig.find(s => s.id === sheet.id)) {
-                                cheatSheetsConfig.push(sheet);
-                            }
-                        });
-                    }
-                });
-
-                // После загрузки всех данных рендерим темы
-                preprocessCourseData();
-                renderTopics();
-                renderRepetitionTopics();
+            // Кеша ещё нет (самый первый запуск) — ждём сеть по-честному, как раньше
+            topicsContainer.innerHTML = '<div style="text-align:center; padding: 40px;"><div class="topics-loading-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div style="color: #1CB0F6; font-weight: 800; font-size: 14px;">Загрузка тем</div></div>';
+            try {
+                await fetchAndCacheCourseData(true);
             } catch (error) {
                 console.error("Ошибка при загрузке данных:", error);
                 topicsContainer.innerHTML = '<div style="text-align:center; padding: 40px; color: #ff4b4b; font-weight: 700;">Ошибка загрузки тем.<br>Ой... Не переживайте, я уже исправляю это!</div>';
@@ -1335,6 +1377,10 @@ currentLessonFailedTasks = [];
                         return;
                     }
                 }
+            }
+
+            if (typeof autoGenerateLesson === 'function' && Array.isArray(currentLesson.tasks)) {
+                currentLesson.tasks = autoGenerateLesson(currentLesson.tasks);
             }
 
             currentTaskIndex = 0;
@@ -3317,6 +3363,20 @@ togglePasswordBtn.addEventListener("click", () => {
           });
         });
 
+function tryRenderTurnstile(attemptsLeft) {
+    if (window.turnstileWidgetId !== undefined) return;
+    if (typeof turnstile !== "undefined") {
+        window.turnstileWidgetId = turnstile.render('#turnstile-widget-container', {
+            sitekey: '0x4AAAAAAE6lU4gh3B9UfXaL',
+            action: 'register'
+        });
+        return;
+    }
+    if (attemptsLeft > 0) {
+        setTimeout(() => tryRenderTurnstile(attemptsLeft - 1), 300);
+    }
+}
+
   // Переключение между "Вход" и "Регистрация"
   authToggle.addEventListener("click", () => {
     isRegisterMode = !isRegisterMode;
@@ -3326,6 +3386,10 @@ togglePasswordBtn.addEventListener("click", () => {
     authError.style.display = "none";
     document.getElementById('auth-consent-group').classList.toggle('hidden', !isRegisterMode);
     document.getElementById('auth-consent-checkbox').checked = false;
+document.getElementById('auth-turnstile-group').classList.toggle('hidden', !isRegisterMode);
+if (isRegisterMode) {
+    tryRenderTurnstile(20);
+}
   });
 
   // Отправка формы
@@ -3351,7 +3415,17 @@ if (isRegisterMode && !document.getElementById('auth-consent-checkbox').checked)
     authSubmitBtn.disabled = false;
     return;
     }
-
+let turnstileToken = "";
+if (isRegisterMode) {
+    turnstileToken = (typeof turnstile !== "undefined" && window.turnstileWidgetId !== undefined) ? turnstile.getResponse(window.turnstileWidgetId) : "";
+    if (!turnstileToken) {
+        authError.textContent = "Подтвердите, что вы не робот";
+        authError.style.display = "block";
+        authSubmitBtn.classList.remove("loading");
+        authSubmitBtn.disabled = false;
+        return;
+    }
+}
 const { signInWithCustomToken } =
     await import("https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js");
 
@@ -3359,7 +3433,7 @@ async function attemptAuthRequest(action, email, password) {
     const res = await fetch("https://d5dkes6tf8o0uff54egi.4b4k4pg5.apigw.yandexcloud.net/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, login: email, password })
+        body: JSON.stringify({ action, login: email, password, turnstileToken })
     });
     const data = await res.json();
     return { res, data };
@@ -3893,6 +3967,14 @@ return `
     document.getElementById('daily-quests-content').style.transform = 'scale(1)';
 
     setTimeout(() => {
+        // весёлая быстрая дробь вибрации ровно на время заполнения полосы (2.5с в CSS)
+        if ('vibrate' in navigator) {
+            const buzz = [];
+            for (let i = 0; i < 28; i++) buzz.push(25, 60); // частые короткие тики
+            buzz.push(90); // финальный акцент в конце
+            navigator.vibrate(buzz);
+        }
+
         container.querySelectorAll('.progress-bar-fill').forEach(bar => {
             const finalPct = bar.getAttribute('data-pct');
             bar.style.width = finalPct + '%';
@@ -3967,4 +4049,4 @@ function createGraphBox(graphCommands) {
 
     graphWrapper.appendChild(iframe);
     return graphWrapper;
-      }
+                }
